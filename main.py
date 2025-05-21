@@ -56,6 +56,13 @@ class DepartmentSelector(tk.Tk):
         self.main_frame = ttk.Frame(self, padding=15)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
+        # ── 타이틀 표시 ─────────────────────────────────────────
+        ttk.Label(
+            self.main_frame,
+            text="강원진학센터 입시분석팀",
+            font=("Helvetica", 16, "bold"),
+        ).pack(pady=(0, 10))
+
         # ── 입력 파일 선택 ───────────────────────────────────
         top_frame = ttk.LabelFrame(self.main_frame, text="입력 파일 선택", padding=10)
         top_frame.pack(fill=tk.X, pady=(0, 15))

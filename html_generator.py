@@ -612,7 +612,16 @@ def plot_selected_depts(
         <style>
             body, html {{ margin:0; padding:0; font-family:'Malgun Gothic', '맑은 고딕', sans-serif; background-color: #f4f7f6; }}
             .fixed-header {{ position: sticky; top: 0; background-color: white; padding: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; width: 100%; border-bottom: 1px solid #ddd; }}
-            .header-content {{ max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; align-items: center; }}
+            .header-content {{ max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; align-items: center; position: relative; }}
+            .site-title {{
+                position: absolute;
+                top: 6px;
+                right: 20px;
+                font-size: 14px;
+                font-weight: bold;
+                color: #5b9bd5;
+                opacity: 0.85;
+            }}
             .university-title {{ text-align: center; font-size: 24px; margin: 10px 0 15px; font-weight: bold; color: #333; }}
             .controls-legend-wrapper {{ display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; flex-wrap: wrap; }}
             .grade-toggle-container {{ padding: 10px; background-color: #f8f8f8; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 1; min-width: 280px; margin-right: 10px; text-align: center; }}
@@ -724,6 +733,7 @@ def plot_selected_depts(
     <body>
         <div class="fixed-header">
             <div class="header-content">
+                <div class="site-title">강원진학센터 입시분석팀(2025)</div>
                 <div class="university-title">선택된 모집단위 입시 결과</div>
                 <div class="controls-legend-wrapper">
                     <div class="grade-toggle-container">
