@@ -103,7 +103,7 @@ def create_stats_html(stats: dict) -> str:
     # 플롯 데이터 스크립트 생성 함수 (수정됨: 평균 숫자 표시 제거)
 def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_map=None):
     """
-    환산등급과 전교과 등급에 대한 박스플롯 데이터를 생성하는 JavaScript 코드 반환
+    환산등급과 전교과 등급에 대한 산점도 데이터를 생성하는 JavaScript 코드 반환
     추가 통계 정보를 함께 표시, 결과 순서 변경
     모든 결과 카테고리(합격, 충원합격, 불합격)에 대해 항상 trace 생성
     """
@@ -112,6 +112,13 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
         "불합격": {"border": "#DC3912", "fill": "rgba(220, 57, 18, 0.3)"},
         "충원합격": {"border": "#109618", "fill": "rgba(16, 150, 24, 0.3)"}
     }
+
+    if symbol_map is None:
+        symbol_map = {
+            "합격": "circle",
+            "충원합격": "triangle-up",
+            "불합격": "x",
+        }
     conv_add_stats = compute_additional_stats(data, "conv_grade")
     all_subj_add_stats = compute_additional_stats(data, "all_subj_grade")
     conv_traces = []
@@ -120,27 +127,22 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
     for result in ["합격", "충원합격", "불합격"]:
         result_data = data[data["result"] == result]
         y_values_conv = result_data["conv_grade"].dropna().tolist()
+        
         if len(y_values_conv) == 0:
             conv_traces.append(f"""{{
-                y: [], x: ['{result}'], type: 'box', name: '{result}', boxpoints: false, width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', opacity: 0.5 }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', showlegend: false, hoverinfo: 'skip'
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
             y_values_json = json.dumps(y_values_conv, cls=NumpyEncoder)
-            # mean_value = sum(y_values_conv) / len(y_values_conv) if len(y_values_conv) > 0 else 0 # 평균 숫자 표시 제거
-
+            x_values_json = json.dumps([result] * len(y_values_conv))
             conv_traces.append(f"""{{
-                y: {y_values_json}, x: Array({len(y_values_conv)}).fill('{result}'), type: 'box', name: '{result}',
-                boxpoints: 'outliers', width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', size: 6, opacity: 0.8, line: {{ width: 1, color: 'rgba(0,0,0,0.5)' }} }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', boxmean: true, hoverinfo: 'y+name',
+                x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
                 hovertemplate: '환산등급: %{{y}}<br>{result}<extra></extra>'
             }}""")
-
-            # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
+# 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # conv_means_traces.append(f"""{{
             #     type: 'scatter',
             #     x: ['{result}'],
@@ -161,25 +163,19 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
         y_values_all_subj = result_data["all_subj_grade"].dropna().tolist()
         if len(y_values_all_subj) == 0:
             all_subj_traces.append(f"""{{
-                y: [], x: ['{result}'], type: 'box', name: '{result}', boxpoints: false, width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', opacity: 0.5 }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', showlegend: false, hoverinfo: 'skip'
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
             y_values_json = json.dumps(y_values_all_subj, cls=NumpyEncoder)
-            # mean_value = sum(y_values_all_subj) / len(y_values_all_subj) if len(y_values_all_subj) > 0 else 0 # 평균 숫자 표시 제거
-
+            x_values_json = json.dumps([result] * len(y_values_all_subj))
             all_subj_traces.append(f"""{{
-                y: {y_values_json}, x: Array({len(y_values_all_subj)}).fill('{result}'), type: 'box', name: '{result}',
-                boxpoints: 'outliers', width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', size: 6, opacity: 0.8, line: {{ width: 1, color: 'rgba(0,0,0,0.5)' }} }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', boxmean: true, hoverinfo: 'y+name',
+                x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
                 hovertemplate: '전교과등급: %{{y}}<br>{result}<extra></extra>'
             }}""")
-
-            # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
+# 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # all_subj_means_traces.append(f"""{{
             #     type: 'scatter',
             #     x: ['{result}'],
@@ -1081,7 +1077,6 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
             plot_bgcolor: "white",
             paper_bgcolor: "white",
             showlegend: false,
-            boxmode: 'overlay'
         };
     }
 
