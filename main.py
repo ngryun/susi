@@ -249,11 +249,18 @@ class DepartmentSelector(tk.Tk):
             dept_filter_df = dept_filter_df[dept_filter_df["apptype"].isin(apptypes)]
 
         # 각 필터 항목 업데이트
-        self.region_filter.refresh(region_filter_df["region"].unique())
-        self.univ_filter.refresh(univ_filter_df["univ"].unique())
-        self.apptype_filter.refresh(apptype_filter_df["apptype"].unique())
-        self.subtype_filter.refresh(subtype_filter_df["subtype"].unique())
-        self.dept_filter.refresh(dept_filter_df["dept"].unique())
+        # 이미 선택된 항목은 후보 목록에서 사라지지 않도록 항상 포함시킨다
+        region_candidates = set(region_filter_df["region"].unique()).union(regions)
+        univ_candidates = set(univ_filter_df["univ"].unique()).union(univs)
+        apptype_candidates = set(apptype_filter_df["apptype"].unique()).union(apptypes)
+        subtype_candidates = set(subtype_filter_df["subtype"].unique()).union(subs)
+        dept_candidates = set(dept_filter_df["dept"].unique()).union(depts)
+
+        self.region_filter.refresh(region_candidates)
+        self.univ_filter.refresh(univ_candidates)
+        self.apptype_filter.refresh(apptype_candidates)
+        self.subtype_filter.refresh(subtype_candidates)
+        self.dept_filter.refresh(dept_candidates)
 
         # 필요하다면 그래프 즉시 렌더
         if not filtered_df.empty and hasattr(self, "render_plots"):
