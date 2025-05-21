@@ -926,42 +926,10 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                     var deptId = deptContainer.id;
                     var deptTitle = deptHeader.textContent.replace(/^\\d+\\)\\s*/, '').trim();
 
-                    // 모집단위 추가
-                    tocHTML += `<div class="toc-dept-item" style="margin-left: 18px; font-weight: bold; margin-top: 8px; color: #0056b3;">${deptTitle}</div>`;
-
-                    // 전형 컨테이너 찾기
-                    deptContainer.querySelectorAll('[id^="subtype-"]').forEach(function(subtypeContainer) {
-                        var subtypeHeader = subtypeContainer.querySelector('.subtype-header');
-                        if (subtypeHeader) {
-                            var subtypeId = subtypeContainer.id;
-                            var subtypeTitle = subtypeHeader.textContent.replace(/^\\d+\\)\\s*/, '').trim();
-
-                            // 전형 추가
-                            tocHTML += `<div class="toc-subtype-item" style="margin-left: 36px;" onclick="scrollToElement('${subtypeId}')">${subtypeTitle}</div>`;
-                        }
-                    });
-
-                    // 모집단위 요약 추가
-                    var deptSummaryId = deptId.replace('container', 'summary');
-                    var deptSummaryElement = document.getElementById(deptSummaryId);
-                    if (deptSummaryElement) {
-                        var summaryHeader = deptSummaryElement.querySelector('.subtype-header');
-                        if (summaryHeader && summaryHeader.textContent.includes('전체 전형 통합')) { // 정확한 요약 항목인지 확인
-                            tocHTML += `<div class="toc-subtype-item" style="margin-left: 36px; font-style: italic;" onclick="scrollToElement('${deptSummaryId}')">전체 전형 통합</div>`;
-                        }
-                    }
+                    // 모집단위 추가 (전형 및 요약 항목 제외)
+                    tocHTML += `<div class="toc-dept-item" style="margin-left: 18px; font-weight: bold; margin-top: 8px; color: #0056b3;" onclick="scrollToElement('${deptId}')">${deptTitle}</div>`;
                 }
             });
-
-            // 대학별 전형 요약 추가 (summary-container- 접두사로 시작하는 ID)
-            var univSummaryId = `summary-container-${uniId.split('-')[1]}`;
-            var summaryElement = document.getElementById(univSummaryId);
-            if (summaryElement) {
-                var summaryHeader = summaryElement.querySelector('.subtype-header'); // 전형별 요약 타이틀
-                if (summaryHeader && summaryHeader.textContent.includes('전형별 요약')) {
-                     tocHTML += `<div class="toc-subtype-item" style="margin-left: 18px; font-weight: bold; color: #2a4365; margin-top: 8px;" onclick="scrollToElement('${univSummaryId}')">${summaryHeader.textContent}</div>`;
-                }
-            }
         });
 
         // 전체 요약 섹션 목차에 추가
