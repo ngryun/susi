@@ -315,12 +315,6 @@ def create_advanced_visualizations(plot_id, data):
     visualizations_html += f"""
         <div class="visualization-row">
             <div class="full-width-visualization">
-                <div class="visualization-title">환산등급 분포 (전체 필터 적용)</div>
-                <div class="plot-container" id="conv-grade-histogram-{plot_id}" style="height: 350px;"></div>
-            </div>
-        </div>
-        <div class="visualization-row">
-            <div class="full-width-visualization">
                 <div class="visualization-title">전교과등급 분포 (전체 필터 적용)</div>
                 <div class="plot-container" id="all-subj-grade-histogram-{plot_id}" style="height: 350px;"></div>
             </div>
@@ -393,29 +387,6 @@ def create_advanced_visualizations(plot_id, data):
                     // el.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
                 }}
             }});
-        }}
-
-        // 환산등급 히스토그램
-        var convHistEl = document.getElementById('conv-grade-histogram-' + plotId);
-        if (convHistEl && data.convGradeHistograms && data.convGradeHistograms.length > 0) {{
-            try {{
-                Plotly.newPlot(convHistEl, data.convGradeHistograms, {{
-                    title: '',
-                    barmode: 'group',
-                    bargap: 0.1,
-                    xaxis: {{ title: '환산등급', range: [1, 9], dtick: 0.5 }},
-                    yaxis: {{ title: '인원 (명)' }},
-                    legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
-                    margin: {{ t: 30, b: 60, l: 60, r: 50 }},
-                    autosize: true,
-                    height: 350,
-                    plot_bgcolor: '#FAFAFA',
-                    paper_bgcolor: '#FAFAFA'
-                }}, {{ displayModeBar: false, responsive: true }});
-            }} catch (e) {{ console.error("환산등급 히스토그램 생성 오류:", e, data.convGradeHistograms); }}
-        }} else if (convHistEl) {{
-            // console.log('No conv grade histogram data.');
-            // convHistEl.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
         }}
 
 
