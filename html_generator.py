@@ -103,7 +103,7 @@ def create_stats_html(stats: dict) -> str:
     # 플롯 데이터 스크립트 생성 함수 (수정됨: 평균 숫자 표시 제거)
 def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_map=None):
     """
-    환산등급과 전교과 등급에 대한 박스플롯 데이터를 생성하는 JavaScript 코드 반환
+    환산등급과 전교과 등급에 대한 산점도 데이터를 생성하는 JavaScript 코드 반환
     추가 통계 정보를 함께 표시, 결과 순서 변경
     모든 결과 카테고리(합격, 충원합격, 불합격)에 대해 항상 trace 생성
     """
@@ -119,28 +119,23 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
 
     for result in ["합격", "충원합격", "불합격"]:
         result_data = data[data["result"] == result]
-        y_values_conv = result_data["conv_grade"].dropna().tolist()
-        if len(y_values_conv) == 0:
+        grade_values = result_data["conv_grade"].dropna().tolist()
+
+        if len(grade_values) == 0:
             conv_traces.append(f"""{{
-                y: [], x: ['{result}'], type: 'box', name: '{result}', boxpoints: false, width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', opacity: 0.5 }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', showlegend: false, hoverinfo: 'skip'
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
-            y_values_json = json.dumps(y_values_conv, cls=NumpyEncoder)
-            # mean_value = sum(y_values_conv) / len(y_values_conv) if len(y_values_conv) > 0 else 0 # 평균 숫자 표시 제거
-
+            x_values_json = json.dumps(grade_values, cls=NumpyEncoder)
+            y_values_json = json.dumps([y_positions.get(result, 0)] * len(grade_values))
             conv_traces.append(f"""{{
-                y: {y_values_json}, x: Array({len(y_values_conv)}).fill('{result}'), type: 'box', name: '{result}',
-                boxpoints: 'outliers', width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', size: 6, opacity: 0.8, line: {{ width: 1, color: 'rgba(0,0,0,0.5)' }} }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', boxmean: true, hoverinfo: 'y+name',
-                hovertemplate: '환산등급: %{{y}}<br>{result}<extra></extra>'
+                x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                hovertemplate: '환산등급: %{{x}}<br>{result}<extra></extra>'
             }}""")
-
-            # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
+# 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # conv_means_traces.append(f"""{{
             #     type: 'scatter',
             #     x: ['{result}'],
@@ -158,28 +153,22 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
 
     for result in ["합격", "충원합격", "불합격"]:
         result_data = data[data["result"] == result]
-        y_values_all_subj = result_data["all_subj_grade"].dropna().tolist()
-        if len(y_values_all_subj) == 0:
+        grade_values = result_data["all_subj_grade"].dropna().tolist()
+        if len(grade_values) == 0:
             all_subj_traces.append(f"""{{
-                y: [], x: ['{result}'], type: 'box', name: '{result}', boxpoints: false, width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', opacity: 0.5 }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', showlegend: false, hoverinfo: 'skip'
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
-            y_values_json = json.dumps(y_values_all_subj, cls=NumpyEncoder)
-            # mean_value = sum(y_values_all_subj) / len(y_values_all_subj) if len(y_values_all_subj) > 0 else 0 # 평균 숫자 표시 제거
-
+            x_values_json = json.dumps(grade_values, cls=NumpyEncoder)
+            y_values_json = json.dumps([y_positions.get(result, 0)] * len(grade_values))
             all_subj_traces.append(f"""{{
-                y: {y_values_json}, x: Array({len(y_values_all_subj)}).fill('{result}'), type: 'box', name: '{result}',
-                boxpoints: 'outliers', width: 0.5,
-                marker: {{ color: '{color_map[result]["border"]}', size: 6, opacity: 0.8, line: {{ width: 1, color: 'rgba(0,0,0,0.5)' }} }},
-                line: {{ color: '{color_map[result]["border"]}', width: 2 }},
-                fillcolor: '{color_map[result]["fill"]}', boxmean: true, hoverinfo: 'y+name',
-                hovertemplate: '전교과등급: %{{y}}<br>{result}<extra></extra>'
+                x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
+                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                hovertemplate: '전교과등급: %{{x}}<br>{result}<extra></extra>'
             }}""")
-
-            # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
+# 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # all_subj_means_traces.append(f"""{{
             #     type: 'scatter',
             #     x: ['{result}'],
@@ -640,7 +629,7 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                             <div class="legend-item"><span class="legend-marker" style="background-color: rgba(16, 150, 24, 0.7);"></span><span class="legend-text">충원합격</span></div>
                             <div class="legend-item"><span class="legend-marker" style="background-color: rgba(220, 57, 18, 0.7);"></span><span class="legend-text">불합격</span></div>
                         </div>
-                        <div class="axis-label"><span class="axis-icon">↕</span> Y축: <span id="grade-type-label">환산등급</span> (1등급 ~ 9등급)</div>
+                        <div class="axis-label"><span class="axis-icon">↔</span> X축: <span id="grade-type-label">환산등급</span> (1등급 ~ 9등급)</div>
                     </div>
                 </div>
             </div>
@@ -652,7 +641,7 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
             </aside>
             <main class="main-content">\n"""
 
-    y_positions = {"합격":0.01, "충원합격":0.0, "불합격":-0.03}
+    y_positions = {"합격":0.02, "충원합격":0.0, "불합격":-0.02}
     marker_styles = {
         "합격": {"opacity":0.7, "line":dict(width=1.5, color="blue"), "color":"rgba(0,0,255,0.3)"},
         "불합격": {"opacity":0.6, "line":dict(width=0.7, color="red"), "color":"rgba(255,0,0,0.2)"},
@@ -1015,73 +1004,47 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
             margin: {t: 15, b: 50, l: 60, r: 30},
             bargap: 0.2,
             xaxis: {
-                type: 'category',
-                categoryorder: 'array',
-                categoryarray: ['합격', '충원합격', '불합격'],
-                showgrid: false,
-                tickfont: { size: 14, weight: 'bold' }
-            },
-            yaxis: {
-                visible: true,
-                showgrid: true,
-                gridcolor: [
-                    '#e0e0e0', // 1등급 - 연한 그레이
-                    '#b0b0b0', // 2등급 - 진한 그레이
-                    '#e0e0e0', // 3등급 - 연한 그레이
-                    '#b0b0b0', // 4등급 - 진한 그레이
-                    '#e0e0e0', // 5등급 - 연한 그레이
-                    '#b0b0b0', // 6등급 - 진한 그레이
-                    '#e0e0e0', // 7등급 - 연한 그레이
-                    '#b0b0b0', // 8등급 - 진한 그레이
-                    '#e0e0e0'  // 9등급 - 연한 그레이
-                ],
-                gridwidth: [
-                    0.5, // 1등급 - 얇은 선
-                    1.0, // 2등급 - 굵은 선
-                    0.5, // 3등급 - 얇은 선
-                    1.0, // 4등급 - 굵은 선
-                    0.5, // 5등급 - 얇은 선
-                    1.0, // 6등급 - 굵은 선
-                    0.5, // 7등급 - 얇은 선
-                    1.0, // 8등급 - 굵은 선
-                    0.5  // 9등급 - 얇은 선
-                ],
-                griddash: [
-                    'dot', // 1등급 - 점선
-                    'solid', // 2등급 - 실선
-                    'dot', // 3등급 - 점선
-                    'solid', // 4등급 - 실선
-                    'dot', // 5등급 - 점선
-                    'solid', // 6등급 - 실선
-                    'dot', // 7등급 - 점선
-                    'solid', // 8등급 - 실선
-                    'dot'  // 9등급 - 점선
-                ],
-                range: [9.5, 0.5], // Y-axis range for grades (1 at top, 9 at bottom)
+                range: [0.5, 9.5],
                 title: { text: '등급', font: { size: 13, color: '#333' }},
                 autorange: false,
-                tickmode: 'array', // Use explicit tick values
-                tickvals: [1, 2, 3, 4, 5, 6, 7, 8, 9], // Values for the ticks
-                ticktext: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], // Text labels for the ticks
+                tickmode: 'array',
+                tickvals: [1,2,3,4,5,6,7,8,9],
+                ticktext: ['1','2','3','4','5','6','7','8','9'],
+                showgrid: true,
+                gridcolor: [
+                    '#e0e0e0',
+                    '#b0b0b0',
+                    '#e0e0e0',
+                    '#b0b0b0',
+                    '#e0e0e0',
+                    '#b0b0b0',
+                    '#e0e0e0',
+                    '#b0b0b0',
+                    '#e0e0e0'
+                ],
+                gridwidth: [
+                    0.5,1.0,0.5,1.0,0.5,1.0,0.5,1.0,0.5
+                ],
+                griddash: ['dot','solid','dot','solid','dot','solid','dot','solid','dot'],
                 tickfont: {
-                    size: 11, // Base size for tick labels
-                    color: [ // Array of colors for tick labels
-                        '#7f7f7f', // Tick 1 (lighter grey)
-                        '#333333', // Tick 2 (darker grey/black)
-                        '#7f7f7f', // Tick 3 (lighter grey)
-                        '#333333', // Tick 4 (darker grey/black)
-                        '#7f7f7f', // Tick 5 (lighter grey)
-                        '#333333', // Tick 6 (darker grey/black)
-                        '#7f7f7f', // Tick 7 (lighter grey)
-                        '#333333', // Tick 8 (darker grey/black)
-                        '#7f7f7f'  // Tick 9 (lighter grey)
+                    size: 11,
+                    color: [
+                        '#7f7f7f', '#333333', '#7f7f7f', '#333333', '#7f7f7f', '#333333', '#7f7f7f', '#333333', '#7f7f7f'
                     ]
                 }
+            },
+            yaxis: {
+                tickmode: 'array',
+                tickvals: [0.02, 0, -0.02],
+                ticktext: ['합격','충원합격','불합격'],
+                range: [-0.04, 0.04],
+                showgrid: false,
+                zeroline: false,
+                automargin: true
             },
             plot_bgcolor: "white",
             paper_bgcolor: "white",
             showlegend: false,
-            boxmode: 'overlay'
         };
     }
 
