@@ -272,7 +272,7 @@ class DepartmentSelector(tk.Tk):
                 msg = plot_selected_depts(self.df, self.output_dir, selected_depts, selected_univs, selected_subtypes, filename)
                 self.after(0, lambda: self._on_html_done(msg, output_path, prog_win))
             except Exception as e:
-                self.after(0, lambda: self._on_html_error(e, prog_win))
+                self.after(0, lambda err=e: self._on_html_error(err, prog_win))
 
         threading.Thread(target=worker, daemon=True).start()
 

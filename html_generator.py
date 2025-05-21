@@ -112,6 +112,13 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
         "불합격": {"border": "#DC3912", "fill": "rgba(220, 57, 18, 0.3)"},
         "충원합격": {"border": "#109618", "fill": "rgba(16, 150, 24, 0.3)"}
     }
+
+    if symbol_map is None:
+        symbol_map = {
+            "합격": "circle",
+            "충원합격": "triangle-up",
+            "불합격": "x",
+        }
     conv_add_stats = compute_additional_stats(data, "conv_grade")
     all_subj_add_stats = compute_additional_stats(data, "all_subj_grade")
     conv_traces = []
