@@ -164,7 +164,7 @@ if not failures:
             s = re.sub(r"\s*;\s*", ";", s) 
             s = re.sub(r"\s*:\s*", ":", s) 
             s = re.sub(r"\s*>\s*<\s*", "><", s)
-            s = s.replace("&amp;", "&").replace("&#9679;", "●").replace("&#9650;", "▲").replace("&#10005;", "✕")
+            s = s.replace("&amp;", "&").replace("&#9679;", "●").replace("&#9650;", "▲").replace("&#10005;", "✕").replace("&#10006;", "✖")
             return s.strip()
 
         normalized_legend_wrapper_content = normalize_html_string(legend_html_content_wrapper)
@@ -172,9 +172,9 @@ if not failures:
 
 
         expected_legend_items_as_substrings = {
-            "합격": normalize_html_string('<div class="legend-item"><span class="legend-marker" style="color: #3366CC; font-size: 1.2em;">●</span><span class="legend-text" style="margin-left: 5px;">합격</span></div>'),
-            "충원합격": normalize_html_string('<div class="legend-item"><span class="legend-marker" style="color: #109618; font-size: 1.2em;">▲</span><span class="legend-text" style="margin-left: 5px;">충원합격</span></div>'),
-            "불합격": normalize_html_string('<div class="legend-item"><span class="legend-marker" style="color: #DC3912; font-size: 1.2em;">✕</span><span class="legend-text" style="margin-left: 5px;">불합격</span></div>')
+            "합격": normalize_html_string('<div class="legend-item"><span class="legend-marker legend-pass">●</span><span class="legend-text">합격 (Y축 상단)</span></div>'),
+            "충원합격": normalize_html_string('<div class="legend-item"><span class="legend-marker legend-wait">▲</span><span class="legend-text">충원합격 (Y축 중앙)</span></div>'),
+            "불합격": normalize_html_string('<div class="legend-item"><span class="legend-marker legend-fail">✖</span><span class="legend-text">불합격 (Y축 하단)</span></div>')
         }
         
         all_legends_found_correctly = True 
