@@ -430,9 +430,9 @@ def create_advanced_visualizations(plot_id, data):
         if (data.univRateGroups) {{
             data.univRateGroups.forEach(function(g, idx) {{
                 var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
-                if (el && g.traces.length > 0) {{
-                    try {{
-                        Plotly.newPlot(el, g.traces, {{
+                if (el && g.traces.length > 0) {
+                    try {
+                        Plotly.newPlot(el, g.traces, {
                             title: '',
                             showlegend: true,
                             barmode: 'stack',
@@ -443,11 +443,11 @@ def create_advanced_visualizations(plot_id, data):
                             height: 350,
                             plot_bgcolor: '#FAFAFA',
                             paper_bgcolor: '#FAFAFA'
-                        }}, {{ displayModeBar: false, responsive: true }});
-                    }} catch (e) {{ console.error('대학별 합격률 차트 생성 오류:', e); }}
-                }}
-            }});
-        }}
+                        }, { displayModeBar: false, responsive: true });
+                    } catch (e) { console.error('대학별 합격률 차트 생성 오류:', e); }
+                }
+            });
+        }
 
         // 환산등급 히스토그램
         if (data.convGradeHistograms && data.convGradeHistograms.length > 0 && document.getElementById('conv-grade-histogram-' + plotId)) {{
