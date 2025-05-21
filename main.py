@@ -213,7 +213,8 @@ class DepartmentSelector(tk.Tk):
         # 선택된 필터 적용 - 결과 확인용
         if regions:
             filtered_df = filtered_df[filtered_df["region"].isin(regions)]
-            region_filter_df = region_filter_df[region_filter_df["region"].isin(regions)]
+            # 다른 필터들의 후보는 선택된 지역에 맞춰 제한하지만
+            # 지역 필터 자체의 후보 목록은 모든 가능한 지역을 유지한다
             univ_filter_df = univ_filter_df[univ_filter_df["region"].isin(regions)]
             subtype_filter_df = subtype_filter_df[subtype_filter_df["region"].isin(regions)]
             dept_filter_df = dept_filter_df[dept_filter_df["region"].isin(regions)]
