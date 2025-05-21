@@ -207,7 +207,10 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
 
 # 새로운 함수: 히스토그램 및 추가 시각화 생성
 def create_advanced_visualizations(plot_id, data):
-    """전체 데이터 요약에 대한 추가 시각화 생성"""
+    """전체 데이터 요약에 대한 추가 시각화 생성
+
+    결과별 분포와 대학별 합격률을 전형유형별로 구분하여 표시한다.
+    """
     # 파스텔톤 색상 맵
     color_map = {
         "합격": "#A8D8EA",     # 부드러운 하늘색
@@ -215,35 +218,73 @@ def create_advanced_visualizations(plot_id, data):
         "충원합격": "#A8E6CE"  # 부드러운 민트색
     }
 
-    # 1. 결과별 도넛 차트 데이터 생성
-    result_counts = data['result'].value_counts().to_dict()
+    apptypes = sorted(data['apptype'].dropna().unique())
 
-    # 도넛 차트 데이터 - 모든 결과를 하나의 차트로 표시
-    values = []
-    labels = []
-    colors = []
+    donut_groups = []
+    univ_rate_groups = []
 
-    for result, count in result_counts.items():
-        values.append(count)
-        labels.append(result)
-        colors.append(color_map.get(result, "#666666"))
+    for apptype in apptypes:
+        df_app = data[data['apptype'] == apptype]
 
-    # 값, 레이블, 색상을 모두 JSON으로 변환
-    values_json = json.dumps(values, cls=NumpyEncoder)
-    labels_json = json.dumps(labels)
-    colors_json = json.dumps(colors)
+        # 결과별 도넛 차트
+        rc = df_app['result'].value_counts().to_dict()
+        v = []
+        l = []
+        c = []
+        for result, count in rc.items():
+            v.append(count)
+            l.append(result)
+            c.append(color_map.get(result, "#666666"))
+        donut_trace = f"""{{
+            values: {json.dumps(v, cls=NumpyEncoder)},
+            labels: {json.dumps(l)},
+            type: 'pie',
+            hole: 0.6,
+            marker: {{ colors: {json.dumps(c)} }},
+            textinfo: 'label+percent',
+            textposition: 'outside',
+            hoverinfo: 'label+value+percent',
+            insidetextorientation: 'radial'
+        }}"""
+        donut_groups.append(f"{{apptype: '{apptype}', traces: [ {donut_trace} ]}}")
 
-    donut_data = [f"""{{
-        values: {values_json},
-        labels: {labels_json},
-        type: 'pie',
-        hole: 0.6,
-        marker: {{ colors: {colors_json} }},
-        textinfo: 'label+percent',
-        textposition: 'outside',
-        hoverinfo: 'label+value+percent',
-        insidetextorientation: 'radial'
-    }}"""]
+        # 대학별 합격률
+        univ_pass_trace = ""
+        if len(df_app) > 0 and 'univ' in df_app.columns:
+            stats = {}
+            for univ, grp in df_app.groupby('univ'):
+                tot = len(grp)
+                passed = len(grp[grp['result'].isin(['합격', '충원합격'])])
+                if tot >= 5:
+                    stats[univ] = {'total': tot, 'passed': passed, 'rate': passed/tot*100 if tot > 0 else 0}
+
+            top_univs = sorted(stats.items(), key=lambda x: x[1]['rate'], reverse=True)[:10]
+            if top_univs:
+                univs = [u for u, _ in top_univs]
+                rates = [d['rate'] for _, d in top_univs]
+                totals = [d['total'] for _, d in top_univs]
+                univ_pass_trace = f"""{{
+                    y: {json.dumps(univs)},
+                    x: {json.dumps(rates)},
+                    text: {json.dumps(totals)}.map(val => '지원자: ' + val + '명'),
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: {{
+                        color: {json.dumps(rates)}.map(val =>
+                            val >= 70 ? '#A8D8EA' :
+                            val >= 50 ? '#A8E6CE' :
+                            val >= 30 ? '#FFD3B5' :
+                            '#FFAAA7'
+                        ),
+                        line: {{ width: 0 }}
+                    }},
+                    hoverinfo: 'text',
+                    text: {json.dumps(univs)}.map((univ, i) => univ + '<br>합격률: ' + {json.dumps(rates)}[i].toFixed(1) + '%<br>' + '지원자: ' + {json.dumps(totals)}[i] + '명')
+                }}"""
+        univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{univ_pass_trace}]}}")
+
+    # 환산등급 히스토그램 데이터
+    conv_grade_histograms = []
 
     # 2. 환산등급 히스토그램 데이터
     conv_grade_histograms = []
@@ -311,82 +352,45 @@ def create_advanced_visualizations(plot_id, data):
             hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#666666")}' }}
         }}""")
 
-    # 4. 대학별 합격률 상위 10개 대학 (가로 막대 차트)
-    univ_pass_rates = []
-    if len(data) > 0 and 'univ' in data.columns: # 'univ' 컬럼 존재 확인
-        # 대학별 지원자 및 합격자 수 계산
-        univ_stats = {}
-        for univ, group in data.groupby('univ'):
-            total = len(group)
-            passed = len(group[group['result'].isin(['합격', '충원합격'])])
-            if total >= 5:  # 최소 5명 이상 지원한 대학만 포함
-                univ_stats[univ] = {'total': total, 'passed': passed, 'rate': passed/total*100 if total > 0 else 0} # ZeroDivisionError 방지
+    # 스크립트 데이터 생성
+    donut_groups_js = "[ " + ", ".join(donut_groups) + " ]"
+    univ_rate_groups_js = "[ " + ", ".join(univ_rate_groups) + " ]"
 
-        # 합격률 상위 10개 대학 선택
-        top_univs = sorted(univ_stats.items(), key=lambda x: x[1]['rate'], reverse=True)[:10]
-
-        if top_univs:
-            univs = [item[0] for item in top_univs]
-            rates = [item[1]['rate'] for item in top_univs]
-            totals = [item[1]['total'] for item in top_univs]
-
-            univs_json = json.dumps(univs)
-            rates_json = json.dumps(rates)
-            totals_json = json.dumps(totals)
-
-            univ_pass_rates.append(f"""{{
-                y: {univs_json},
-                x: {rates_json},
-                text: {totals_json}.map(val => '지원자: ' + val + '명'),
-                type: 'bar',
-                orientation: 'h',
-                marker: {{
-                    color: {rates_json}.map(val =>
-                        val >= 70 ? '#A8D8EA' :  // 높은 합격률 - 부드러운 하늘색
-                        val >= 50 ? '#A8E6CE' :  // 중간 합격률 - 부드러운 민트색
-                        val >= 30 ? '#FFD3B5' :  // 낮은 합격률 - 부드러운 주황색
-                        '#FFAAA7'               // 매우 낮은 합격률 - 부드러운 핑크
-                    ),
-                    line: {{ width: 0 }}
-                }},
-                hoverinfo: 'text',
-                text: {univs_json}.map((univ, i) => univ + '<br>합격률: ' + {rates_json}[i].toFixed(1) + '%<br>' + '지원자: ' + {totals_json}[i] + '명')
-            }}""")
-
-    # 모든 시각화를 위한 스크립트 생성
     script = f"""
     <script>
     if (!window.advancedVisualizationData) window.advancedVisualizationData = {{}};
     window.advancedVisualizationData["{plot_id}"] = {{
-        donutChartTraces: [ {", ".join(donut_data) if donut_data else ""} ],
+        donutGroups: {donut_groups_js},
         convGradeHistograms: [ {", ".join(conv_grade_histograms) if conv_grade_histograms else ""} ],
         allSubjGradeHistograms: [ {", ".join(all_subj_grade_histograms) if all_subj_grade_histograms else ""} ],
-        univPassRates: [ {", ".join(univ_pass_rates) if univ_pass_rates else ""} ]
+        univRateGroups: {univ_rate_groups_js}
     }};
     </script>
     """
 
     # HTML 컨테이너 생성
-    visualizations_html = f"""
-    <div class="advanced-visualizations-container">
-        <div class="visualization-row">
-            <div class="half-width-visualization">
-                <div class="visualization-title">결과별 분포</div>
-                <div class="plot-container" id="donut-chart-{plot_id}" style="height: 400px;"></div>
+    visualizations_html = f"<div class=\"advanced-visualizations-container\">"
+    for idx, ap in enumerate(apptypes):
+        visualizations_html += f"""
+        <div class=\"visualization-row\">"""
+        visualizations_html += f"""
+            <div class=\"half-width-visualization\">
+                <div class=\"visualization-title\">결과별 분포 - {ap}</div>
+                <div class=\"plot-container\" id=\"donut-chart-{plot_id}-{idx}\" style=\"height: 400px;\"></div>
             </div>
-            <div class="half-width-visualization">
-                <div class="visualization-title">대학별 합격률 (상위 10개)</div>
-                <div class="plot-container" id="univ-pass-rates-{plot_id}" style="height: 400px;"></div>
+            <div class=\"half-width-visualization\">
+                <div class=\"visualization-title\">대학별 합격률 ({ap})</div>
+                <div class=\"plot-container\" id=\"univ-pass-rates-{plot_id}-{idx}\" style=\"height: 400px;\"></div>
+            </div>
+        </div>"""
+    visualizations_html += f"""
+        <div class=\"visualization-row\">
+            <div class=\"full-width-visualization\">
+                <div class=\"visualization-title\">전교과등급 분포</div>
+                <div class=\"plot-container\" id=\"all-subj-grade-histogram-{plot_id}\" style=\"height: 350px;\"></div>
             </div>
         </div>
-        <div class="visualization-row">
-            <div class="full-width-visualization">
-                <div class="visualization-title">전교과등급 분포</div>
-                <div class="plot-container" id="all-subj-grade-histogram-{plot_id}" style="height: 350px;"></div>
-            </div>
-        </div>
-    </div>
-    """
+    </div>"""
 
     # JavaScript 초기화 코드
     init_script = f"""
@@ -400,36 +404,46 @@ def create_advanced_visualizations(plot_id, data):
 
         var data = window.advancedVisualizationData[plotId];
 
-        // 결과별 도넛 차트
-        if (data.donutChartTraces && data.donutChartTraces.length > 0 && document.getElementById('donut-chart-' + plotId)) {{
-            try {{
-                Plotly.newPlot('donut-chart-' + plotId, data.donutChartTraces, {{
-                    title: '',
-                    legend: {{ orientation: 'h', y: -0.1, x: 0.5, xanchor: 'center' }},
-                    margin: {{ t: 30, b: 50, l: 50, r: 50 }},
-                    autosize: true,
-                    height: 350,
-                    plot_bgcolor: '#FAFAFA',
-                    paper_bgcolor: '#FAFAFA'
-                }}, {{ displayModeBar: false, responsive: true }});
-            }} catch (e) {{ console.error("도넛 차트 생성 오류:", e); }}
+        // 결과별 도넛 차트 (전형유형별)
+        if (data.donutGroups) {{
+            data.donutGroups.forEach(function(g, idx) {{
+                var el = document.getElementById('donut-chart-' + plotId + '-' + idx);
+                if (el && g.traces.length > 0) {{
+                    try {{
+                        Plotly.newPlot(el, g.traces, {{
+                            title: '',
+                            legend: {{ orientation: 'h', y: -0.1, x: 0.5, xanchor: 'center' }},
+                            margin: {{ t: 30, b: 50, l: 50, r: 50 }},
+                            autosize: true,
+                            height: 350,
+                            plot_bgcolor: '#FAFAFA',
+                            paper_bgcolor: '#FAFAFA'
+                        }}, {{ displayModeBar: false, responsive: true }});
+                    }} catch (e) {{ console.error('도넛 차트 생성 오류:', e); }}
+                }}
+            }});
         }}
 
-        // 대학별 합격률
-        if (data.univPassRates && data.univPassRates.length > 0 && document.getElementById('univ-pass-rates-' + plotId)) {{
-           try {{
-                Plotly.newPlot('univ-pass-rates-' + plotId, data.univPassRates, {{
-                    title: '',
-                    showlegend: false,
-                    margin: {{ t: 30, b: 50, l: 150, r: 50 }},
-                    xaxis: {{ title: '합격률 (%)', range: [0, 100] }},
-                    yaxis: {{ automargin: true }},
-                    autosize: true,
-                    height: 350,
-                    plot_bgcolor: '#FAFAFA',
-                    paper_bgcolor: '#FAFAFA'
-                }}, {{ displayModeBar: false, responsive: true }});
-            }} catch (e) {{ console.error("대학별 합격률 차트 생성 오류:", e); }}
+        // 대학별 합격률 (전형유형별)
+        if (data.univRateGroups) {{
+            data.univRateGroups.forEach(function(g, idx) {{
+                var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
+                if (el && g.traces.length > 0) {{
+                    try {{
+                        Plotly.newPlot(el, g.traces, {{
+                            title: '',
+                            showlegend: false,
+                            margin: {{ t: 30, b: 50, l: 150, r: 50 }},
+                            xaxis: {{ title: '합격률 (%)', range: [0, 100] }},
+                            yaxis: {{ automargin: true }},
+                            autosize: true,
+                            height: 350,
+                            plot_bgcolor: '#FAFAFA',
+                            paper_bgcolor: '#FAFAFA'
+                        }}, {{ displayModeBar: false, responsive: true }});
+                    }} catch (e) {{ console.error('대학별 합격률 차트 생성 오류:', e); }}
+                }}
+            }});
         }}
 
         // 환산등급 히스토그램
@@ -543,9 +557,11 @@ def plot_selected_depts(
             .layout {{ display: flex; justify-content: center; align-items: flex-start; max-width: 1200px; margin: 20px auto; padding: 0 20px; }}
             .toc-container {{ flex: 0 0 220px; position: sticky; top: 160px; margin-right: 25px; background-color: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; max-height: calc(100vh - 200px); overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 900; }}
             .toc-header {{ font-weight: bold; font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #333; }}
-            .toc-university {{ font-weight: bold; margin-top: 10px; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background-color 0.2s; color: #0056b3; }}
+            .toc-university {{ font-weight: bold; margin-top: 10px; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background-color 0.2s; color: #0056b3; display:flex; align-items:center; }}
             .toc-university:hover {{ background-color: #e9ecef; }}
-            .toc-subtype-item {{ margin-left: 18px; font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }}
+            .toc-arrow {{ margin-right: 6px; }}
+            .toc-subitems {{ margin-left: 18px; display:none; }}
+            .toc-subtype-item {{ font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }}
             .toc-subtype-item:hover {{ background-color: #f1f3f5; }}
             .main-content {{ flex: 1 1 auto; max-width: calc(100% - 245px); padding-top: 20px; }}
             .dept-container {{ margin-bottom: 50px; border: 1px solid #d1d9e6; border-radius: 12px; padding: 25px; background-color: #ffffff; box-shadow: 0 6px 18px rgba(0,0,0,0.07); }}
@@ -673,66 +689,8 @@ def plot_selected_depts(
             <div class="dept-header">{univ}</div>
         """
 
-        # 각 대학에서 모집단위 목록 가져오기
-        if selected_depts:
-            univ_depts = sorted(set(df_univ['dept']) & set(selected_depts))
-        else:
-            univ_depts = sorted(df_univ['dept'].unique())
-
-        # 모집단위별 루프
-        for d_idx, dept in enumerate(univ_depts, 1):
-            dd = df_univ[df_univ['dept'] == dept]
-
-            html_content += f"""
-            <div class="subtype-container" id="dept-container-{univ_idx}-{d_idx}">
-                <div class="subtype-header" style="color: #34495e;">{d_idx}) {dept}</div>
-            """
-
-            # 선택된 전형 목록 가져오기
-            if selected_subtypes:
-                dept_subtypes = sorted(set(dd['subtype']) & set(selected_subtypes))
-            else:
-                dept_subtypes = sorted(dd['subtype'].unique())
-
-            # 전형별 루프
-            for st_idx, subtype_val in enumerate(dept_subtypes, 1):
-                st_data = dd[dd['subtype'] == subtype_val]
-                if st_data.empty:
-                    continue
-
-                # 통계 계산
-                conv_stats = compute_stats(st_data, "conv_grade")
-                all_subj_stats = compute_stats(st_data, "all_subj_grade")
-                conv_stats_html = create_stats_html(conv_stats)
-                all_subj_stats_html = create_stats_html(all_subj_stats)
-
-                # 박스플롯 스크립트 및 통계 테이블 생성
-                plot_script, conv_detail_stats, all_subj_detail_stats = create_plot_data_script(
-                    plot_counter, st_data, y_positions, marker_styles
-                )
-
-                html_content += f"""
-                <div class="subtype-container" id="subtype-{univ_idx}-{d_idx}-{st_idx}" style="margin-left: 20px; background-color: #fbfcfe;">
-                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{st_idx}) {subtype_val}</div>
-                    <div class="visualization-container">
-                        <div class="plot-stats-wrapper">
-                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
-                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
-                            <div class="plot-container" id="plot-{plot_counter}"></div>
-                        </div>
-                        {plot_script}
-                    </div>
-                </div>
-                """
-                plot_counter += 1
-
-
-            html_content += """
-            </div>
-            """
-        # 변수 정의
+        # 전형유형별 요약 먼저 추가
         ap_summary_container_id = f"apptype-summary-{univ_idx}"
-        # 대학별 전형유형 요약 섹션
         html_content += f"""
         <div class="subtype-container" id="{ap_summary_container_id}" style="background-color: #eef2f7;">
             <div class="subtype-header" style="color: #1a202c;">전형유형별 요약</div>
@@ -782,6 +740,61 @@ def plot_selected_depts(
         html_content += """
         </div>
         """
+
+        # 각 대학에서 모집단위 목록 가져오기
+        if selected_depts:
+            univ_depts = sorted(set(df_univ['dept']) & set(selected_depts))
+        else:
+            univ_depts = sorted(df_univ['dept'].unique())
+
+        # 모집단위별 루프
+        for d_idx, dept in enumerate(univ_depts, 1):
+            dd = df_univ[df_univ['dept'] == dept]
+
+            html_content += f"""
+            <div class="subtype-container" id="dept-container-{univ_idx}-{d_idx}">
+                <div class="subtype-header" style="color: #34495e;">{d_idx}) {dept}</div>
+            """
+
+            # 선택된 전형 목록 가져오기
+            if selected_subtypes:
+                dept_subtypes = sorted(set(dd['subtype']) & set(selected_subtypes))
+            else:
+                dept_subtypes = sorted(dd['subtype'].unique())
+
+            # 전형별 루프
+            for st_idx, subtype_val in enumerate(dept_subtypes, 1):
+                st_data = dd[dd['subtype'] == subtype_val]
+                if st_data.empty:
+                    continue
+
+                conv_stats = compute_stats(st_data, "conv_grade")
+                all_subj_stats = compute_stats(st_data, "all_subj_grade")
+                conv_stats_html = create_stats_html(conv_stats)
+                all_subj_stats_html = create_stats_html(all_subj_stats)
+
+                plot_script, conv_detail_stats, all_subj_detail_stats = create_plot_data_script(
+                    plot_counter, st_data, y_positions, marker_styles
+                )
+
+                html_content += f"""
+                <div class="subtype-container" id="subtype-{univ_idx}-{d_idx}-{st_idx}" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{st_idx}) {subtype_val}</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
+                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
+                            <div class="plot-container" id="plot-{plot_counter}"></div>
+                        </div>
+                        {plot_script}
+                    </div>
+                </div>
+                """
+                plot_counter += 1
+
+            html_content += """
+            </div>
+            """
 
         # 대학별 전형 요약 섹션 (이전 코드와 유사)
         summary_container_id = f"summary-container-{univ_idx}"
@@ -927,23 +940,25 @@ def plot_selected_depts(
             // '전체 데이터 요약'은 별도로 처리
             if (uniId === 'overall-summary') return;
 
-            tocHTML += `<div class="toc-university" onclick="scrollToElement('${uniId}')">${uniTitle}</div>`;
+            var subId = 'toc-' + uniId;
+            tocHTML += `<div class="toc-university" onclick="toggleToc('${subId}', this); scrollToElement('${uniId}')"><span class="toc-arrow">▶</span>${uniTitle}</div>`;
+            tocHTML += `<div class="toc-subitems" id="${subId}">`;
 
-            // 모집단위 컨테이너 찾기 (dept-container- 접두사로 시작하는 ID)
+            var apSummary = container.querySelector('[id^="apptype-summary-"]');
+            if (apSummary) {
+                tocHTML += `<div class="toc-subtype-item" onclick="scrollToElement('${apSummary.id}')">전형유형별 요약</div>`;
+            }
+
             container.querySelectorAll('[id^="dept-container-"]').forEach(function(deptContainer) {
                 var deptHeader = deptContainer.querySelector('.subtype-header');
                 if (deptHeader) {
                     var deptId = deptContainer.id;
                     var deptTitle = deptHeader.textContent.replace(/^\\d+\\)\\s*/, '').trim();
-
-                    // 모집단위 추가 (전형 및 요약 항목 제외)
                     tocHTML += `<div class="toc-dept-item" style="margin-left: 18px; font-weight: bold; margin-top: 8px; color: #0056b3;" onclick="scrollToElement('${deptId}')">${deptTitle}</div>`;
                 }
             });
-            var apSummary = container.querySelector('[id^="apptype-summary-"]');
-            if (apSummary) {
-                tocHTML += `<div class="toc-subtype-item" style="margin-left: 18px;" onclick="scrollToElement('${apSummary.id}')">전형유형별 요약</div>`;
-            }
+
+            tocHTML += `</div>`;
         });
 
         // 전체 요약 섹션 목차에 추가
@@ -1109,6 +1124,17 @@ def plot_selected_depts(
             }
         });
         console.log('모든 플롯 업데이트 완료');
+    }
+
+    function toggleToc(id, headerEl) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var hidden = el.style.display === 'none' || el.style.display === '';
+        el.style.display = hidden ? 'block' : 'none';
+        if (headerEl) {
+            var arrow = headerEl.querySelector('.toc-arrow');
+            if (arrow) arrow.textContent = hidden ? '▼' : '▶';
+        }
     }
 
     function scrollToElement(id) {
