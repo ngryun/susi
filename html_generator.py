@@ -248,40 +248,42 @@ def create_advanced_visualizations(plot_id, data):
         }}"""
         donut_groups.append(f"{{apptype: '{apptype}', traces: [ {donut_trace} ]}}")
 
-        # 대학별 합격률
-        univ_pass_trace = ""
+        # 대학별 지원자수 기준 합격/불합격 현황
+        pass_trace = ""
+        fail_trace = ""
         if len(df_app) > 0 and 'univ' in df_app.columns:
             stats = {}
             for univ, grp in df_app.groupby('univ'):
-                tot = len(grp)
-                passed = len(grp[grp['result'].isin(['합격', '충원합격'])])
-                if tot >= 5:
-                    stats[univ] = {'total': tot, 'passed': passed, 'rate': passed/tot*100 if tot > 0 else 0}
+                pass_cnt = len(grp[grp['result'].isin(['합격', '충원합격'])])
+                fail_cnt = len(grp[grp['result'] == '불합격'])
+                total = pass_cnt + fail_cnt
+                if total >= 5:
+                    stats[univ] = {'total': total, 'pass': pass_cnt, 'fail': fail_cnt}
 
-            top_univs = sorted(stats.items(), key=lambda x: x[1]['rate'], reverse=True)[:10]
+            top_univs = sorted(stats.items(), key=lambda x: x[1]['total'], reverse=True)[:10]
             if top_univs:
                 univs = [u for u, _ in top_univs]
-                rates = [d['rate'] for _, d in top_univs]
-                totals = [d['total'] for _, d in top_univs]
-                univ_pass_trace = f"""{{
+                pass_counts = [d['pass'] for _, d in top_univs]
+                fail_counts = [d['fail'] for _, d in top_univs]
+                pass_trace = f"""{{
                     y: {json.dumps(univs)},
-                    x: {json.dumps(rates)},
-                    text: {json.dumps(totals)}.map(val => '지원자: ' + val + '명'),
+                    x: {json.dumps(pass_counts)},
+                    name: '합격',
                     type: 'bar',
                     orientation: 'h',
-                    marker: {{
-                        color: {json.dumps(rates)}.map(val =>
-                            val >= 70 ? '#A8D8EA' :
-                            val >= 50 ? '#A8E6CE' :
-                            val >= 30 ? '#FFD3B5' :
-                            '#FFAAA7'
-                        ),
-                        line: {{ width: 0 }}
-                    }},
-                    hoverinfo: 'text',
-                    text: {json.dumps(univs)}.map((univ, i) => univ + '<br>합격률: ' + {json.dumps(rates)}[i].toFixed(1) + '%<br>' + '지원자: ' + {json.dumps(totals)}[i] + '명')
+                    marker: {{ color: '#A8D8EA' }},
+                    hovertemplate: '%{{y}}<br>합격: %{{x}}명<extra></extra>'
                 }}"""
-        univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{univ_pass_trace}]}}")
+                fail_trace = f"""{{
+                    y: {json.dumps(univs)},
+                    x: {json.dumps(fail_counts)},
+                    name: '불합격',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: {{ color: '#FFAAA7' }},
+                    hovertemplate: '%{{y}}<br>불합격: %{{x}}명<extra></extra>'
+                }}"""
+        univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{pass_trace}, {fail_trace}]}}")
 
     # 환산등급 히스토그램 데이터
     conv_grade_histograms = []
@@ -424,7 +426,7 @@ def create_advanced_visualizations(plot_id, data):
             }});
         }}
 
-        // 대학별 합격률 (전형유형별)
+        // 대학별 지원 현황 (전형유형별)
         if (data.univRateGroups) {{
             data.univRateGroups.forEach(function(g, idx) {{
                 var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
@@ -432,9 +434,10 @@ def create_advanced_visualizations(plot_id, data):
                     try {{
                         Plotly.newPlot(el, g.traces, {{
                             title: '',
-                            showlegend: false,
+                            showlegend: true,
+                            barmode: 'stack',
                             margin: {{ t: 30, b: 50, l: 150, r: 50 }},
-                            xaxis: {{ title: '합격률 (%)', range: [0, 100] }},
+                            xaxis: {{ title: '지원자 수 (명)' }},
                             yaxis: {{ automargin: true }},
                             autosize: true,
                             height: 350,
