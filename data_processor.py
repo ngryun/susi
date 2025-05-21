@@ -51,7 +51,7 @@ def read_input(path: Path) -> pd.DataFrame:
             path,
             header=None,
             skiprows=2,
-            usecols="G,I,K,M,R,AH,AG",
+            usecols="G,I,K,M,R,AG,AH",
             engine=engine,
         )
 
@@ -61,8 +61,8 @@ def read_input(path: Path) -> pd.DataFrame:
             "subtype",
             "dept",
             "result",
-            "conv_grade",
             "all_subj_grade",
+            "conv_grade",
         ]
         df["result"] = df["result"].astype(str).str.strip()
         df["conv_grade"] = pd.to_numeric(df["conv_grade"], errors="coerce")
