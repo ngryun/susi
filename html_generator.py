@@ -715,14 +715,6 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                             <div class="plot-container" id="plot-{plot_counter}"></div>
                         </div>
                         {plot_script}
-                        <div class="stats-tables-wrapper">
-                            <div id="conv-additional-stats-{plot_counter}" class="additional-stats-container">
-                                {conv_detail_stats}
-                            </div>
-                            <div id="all-subj-additional-stats-{plot_counter}" class="additional-stats-container" style="display:none;">
-                                {all_subj_detail_stats}
-                            </div>
-                        </div>
                     </div>
                 </div>
                 """
@@ -748,14 +740,6 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                         <div class="plot-container" id="plot-{plot_counter}"></div>
                     </div>
                     {plot_script}
-                    <div class="stats-tables-wrapper">
-                        <div id="conv-additional-stats-{plot_counter}" class="additional-stats-container">
-                            {conv_detail_stats}
-                        </div>
-                        <div id="all-subj-additional-stats-{plot_counter}" class="additional-stats-container" style="display:none;">
-                            {all_subj_detail_stats}
-                        </div>
-                    </div>
                 </div>
             </div>
             """
@@ -809,14 +793,6 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                             <div class="plot-container" id="plot-{plot_counter}"></div>
                         </div>
                         {plot_script}
-                        <div class="stats-tables-wrapper">
-                            <div id="conv-additional-stats-{plot_counter}" class="additional-stats-container">
-                                {conv_detail_stats}
-                            </div>
-                            <div id="all-subj-additional-stats-{plot_counter}" class="additional-stats-container" style="display:none;">
-                                {all_subj_detail_stats}
-                            </div>
-                        </div>
                     </div>
                 </div>
             """
