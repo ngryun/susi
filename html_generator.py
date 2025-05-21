@@ -207,35 +207,7 @@ def create_advanced_visualizations(plot_id, data):
         # This ensures traces is '[]' if univ_traces_for_apptype is empty.
         univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{', '.join(univ_traces_for_apptype)}]}}")
 
-    # 환산등급 히스토그램 데이터
-    conv_grade_histograms = []
-    pass_data_conv = data[data["result"].isin(["합격", "충원합격"])]["conv_grade"].dropna()
-    if not pass_data_conv.empty: # MODIFICATION: Check if data is not empty
-        values_json = json.dumps(pass_data_conv.tolist(), cls=NumpyEncoder)
-        conv_grade_histograms.append(f"""{{
-            x: {values_json},
-            type: 'histogram',
-            name: '합격(충원포함)',
-            opacity: 0.7,
-            marker: {{ color: '{color_map.get("합격", "#A8D8EA")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.5 }},
-            hoverinfo: 'y+x+name',
-            hoverlabel: {{ bgcolor: '{color_map.get("합격", "#A8D8EA")}' }}
-        }}""")
-
-    fail_data_conv = data[data["result"] == "불합격"]["conv_grade"].dropna()
-    if not fail_data_conv.empty: # MODIFICATION: Check if data is not empty
-        values_json = json.dumps(fail_data_conv.tolist(), cls=NumpyEncoder)
-        conv_grade_histograms.append(f"""{{
-            x: {values_json},
-            type: 'histogram',
-            name: '불합격',
-            opacity: 0.7,
-            marker: {{ color: '{color_map.get("불합격", "#FFAAA7")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.5 }},
-            hoverinfo: 'y+x+name',
-            hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#FFAAA7")}' }}
-        }}""")
+    # 환산등급 히스토그램 데이터 제거
 
     # 전교과등급 히스토그램 데이터
     all_subj_grade_histograms = []
@@ -273,7 +245,6 @@ def create_advanced_visualizations(plot_id, data):
     # MODIFICATION: Ensure histogram arrays are correctly formatted as empty '[]' if no traces.
     # The .join() method on an empty list results in an empty string "".
     # So, [ "" ] becomes an empty JS array [].
-    conv_hist_js = ", ".join(conv_grade_histograms)
     all_subj_hist_js = ", ".join(all_subj_grade_histograms)
 
     script = f"""
@@ -281,7 +252,6 @@ def create_advanced_visualizations(plot_id, data):
     if (!window.advancedVisualizationData) window.advancedVisualizationData = {{}};
     window.advancedVisualizationData["{plot_id}"] = {{
         donutGroups: {donut_groups_js},
-        convGradeHistograms: [ {conv_hist_js} ],
         allSubjGradeHistograms: [ {all_subj_hist_js} ],
         univRateGroups: {univ_rate_groups_js}
     }};
@@ -313,12 +283,6 @@ def create_advanced_visualizations(plot_id, data):
     # It's better if these are also conditional or handled gracefully in JS if data is missing.
     # For now, keeping original structure for HTML containers:
     visualizations_html += f"""
-        <div class="visualization-row">
-            <div class="full-width-visualization">
-                <div class="visualization-title">환산등급 분포 (전체 필터 적용)</div>
-                <div class="plot-container" id="conv-grade-histogram-{plot_id}" style="height: 350px;"></div>
-            </div>
-        </div>
         <div class="visualization-row">
             <div class="full-width-visualization">
                 <div class="visualization-title">전교과등급 분포 (전체 필터 적용)</div>
@@ -393,30 +357,6 @@ def create_advanced_visualizations(plot_id, data):
                     // el.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
                 }}
             }});
-        }}
-
-        // 환산등급 히스토그램
-        var convHistEl = document.getElementById('conv-grade-histogram-' + plotId);
-        if (convHistEl && data.convGradeHistograms && data.convGradeHistograms.length > 0) {{
-            try {{
-                Plotly.newPlot(convHistEl, data.convGradeHistograms, {{
-                    title: '',
-                    barmode: 'group',
-                    bargap: 0.1,
-                    xaxis: {{ title: '환산등급', range: [1, 9], dtick: 0.5 }},
-                    yaxis: {{ title: '인원 (명)' }},
-                    legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
-                    margin: {{ t: 30, b: 60, l: 60, r: 50 }},
-                    autosize: true,
-                    height: 350,
-                    plot_bgcolor: '#FAFAFA',
-                    paper_bgcolor: '#FAFAFA'
-                }}, {{ displayModeBar: false, responsive: true }});
-            }} catch (e) {{ console.error("환산등급 히스토그램 생성 오류:", e, data.convGradeHistograms); }}
-        }} else if (convHistEl) {{
-            // console.log('No conv grade histogram data.');
-            // convHistEl.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
-        }}
 
 
         // 전교과등급 히스토그램
@@ -1183,10 +1123,8 @@ def plot_selected_depts(
         
         // 전체 데이터 요약 섹션의 히스토그램 가시성 업데이트
         if (overallSummaryPlotId) {
-            var convHistogram = document.getElementById('conv-grade-histogram-' + overallSummaryPlotId);
             var allSubjHistogram = document.getElementById('all-subj-grade-histogram-' + overallSummaryPlotId);
-            
-            if (convHistogram) convHistogram.style.display = (gradeType === 'conv') ? 'block' : 'none';
+
             if (allSubjHistogram) allSubjHistogram.style.display = (gradeType === 'all_subj') ? 'block' : 'none';
         }
     }
