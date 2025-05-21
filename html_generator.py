@@ -381,12 +381,6 @@ def create_advanced_visualizations(plot_id, data):
         </div>
         <div class="visualization-row">
             <div class="full-width-visualization">
-                <div class="visualization-title">환산등급 분포</div>
-                <div class="plot-container" id="conv-grade-histogram-{plot_id}" style="height: 350px;"></div>
-            </div>
-        </div>
-        <div class="visualization-row">
-            <div class="full-width-visualization">
                 <div class="visualization-title">전교과등급 분포</div>
                 <div class="plot-container" id="all-subj-grade-histogram-{plot_id}" style="height: 350px;"></div>
             </div>
@@ -642,8 +636,8 @@ def plot_selected_depts(
                 <div class="university-title">선택된 모집단위 입시 결과</div>
                 <div class="controls-legend-wrapper">
                     <div class="grade-toggle-container">
-                        <button id="btn-conv-grade" class="grade-toggle-btn active" onclick="switchGradeType('conv')">환산등급</button>
-                        <button id="btn-all-subj-grade" class="grade-toggle-btn" onclick="switchGradeType('all_subj')">전교과100 등급</button>
+                        <button id="btn-conv-grade" class="grade-toggle-btn" onclick="switchGradeType('conv')">환산등급</button>
+                        <button id="btn-all-subj-grade" class="grade-toggle-btn active" onclick="switchGradeType('all_subj')">전교과100 등급</button>
                     </div>
                     <div class="legend-container">
                         <div class="legend-items-wrapper">
@@ -651,7 +645,7 @@ def plot_selected_depts(
                             <div class="legend-item"><span class="legend-marker legend-wait">&#9650;</span><span class="legend-text">충원합격 (Y축 중앙)</span></div>
                             <div class="legend-item"><span class="legend-marker legend-fail">&#10006;</span><span class="legend-text">불합격 (Y축 하단)</span></div>
                         </div>
-                        <div class="axis-label"><span class="axis-icon">↔</span> X축: <span id="grade-type-label">환산등급</span> (1등급 ~ 9등급)</div>
+                        <div class="axis-label"><span class="axis-icon">↔</span> X축: <span id="grade-type-label">전교과100 등급</span> (1등급 ~ 9등급)</div>
                     </div>
                 </div>
             </div>
@@ -722,8 +716,8 @@ def plot_selected_depts(
                     <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{st_idx}) {subtype_val}</div>
                     <div class="visualization-container">
                         <div class="plot-stats-wrapper">
-                            <div id="conv-stats-{plot_counter}" class="stats-container">{conv_stats_html}</div>
-                            <div id="all-subj-stats-{plot_counter}" class="stats-container" style="display:none;">{all_subj_stats_html}</div>
+                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
+                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
                             <div class="plot-container" id="plot-{plot_counter}"></div>
                         </div>
                         {plot_script}
@@ -775,8 +769,8 @@ def plot_selected_depts(
                     <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{apptype}</div>
                     <div class="visualization-container">
                         <div class="plot-stats-wrapper">
-                            <div id="conv-stats-{plot_counter}" class="stats-container">{conv_stats_html}</div>
-                            <div id="all-subj-stats-{plot_counter}" class="stats-container" style="display:none;">{all_subj_stats_html}</div>
+                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
+                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
                             <div class="plot-container" id="plot-{plot_counter}"></div>
                         </div>
                         {plot_script}
@@ -828,8 +822,8 @@ def plot_selected_depts(
                     <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{subtype}</div>
                     <div class="visualization-container">
                         <div class="plot-stats-wrapper">
-                            <div id="conv-stats-{plot_counter}" class="stats-container">{conv_stats_html}</div>
-                            <div id="all-subj-stats-{plot_counter}" class="stats-container" style="display:none;">{all_subj_stats_html}</div>
+                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
+                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
                             <div class="plot-container" id="plot-{plot_counter}"></div>
                         </div>
                         {plot_script}
@@ -865,16 +859,16 @@ def plot_selected_depts(
     html_content += f"""
         <div class="visualization-container">
             <div class="plot-stats-wrapper">
-                <div id="conv-stats-{plot_counter}" class="stats-container">{overall_conv_stats_html}</div>
-                <div id="all-subj-stats-{plot_counter}" class="stats-container" style="display:none;">{overall_all_subj_stats_html}</div>
+                <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{overall_conv_stats_html}</div>
+                <div id="all-subj-stats-{plot_counter}" class="stats-container">{overall_all_subj_stats_html}</div>
                 <div class="plot-container" id="plot-{plot_counter}"></div>
             </div>
             {overall_plot_script}
             <div class="stats-tables-wrapper">
-                <div id="conv-additional-stats-{plot_counter}" class="additional-stats-container">
+                <div id="conv-additional-stats-{plot_counter}" class="additional-stats-container" style="display:none;">
                     {overall_conv_detail_stats}
                 </div>
-                <div id="all-subj-additional-stats-{plot_counter}" class="additional-stats-container" style="display:none;">
+                <div id="all-subj-additional-stats-{plot_counter}" class="additional-stats-container">
                     {overall_all_subj_detail_stats}
                 </div>
             </div>
@@ -916,7 +910,7 @@ def plot_selected_depts(
 
     html_content += """
     <script>
-    var currentGradeType = 'conv';
+    var currentGradeType = 'all_subj';
     var plotsInitialized = false;
     document.addEventListener('DOMContentLoaded', function() {
         console.log('페이지 초기화 시작...');
@@ -981,7 +975,9 @@ def plot_selected_depts(
                         return;
                     }
                     var plotData = window.plotsData[numericId];
-                    var traces = JSON.parse(JSON.stringify(plotData.convTraces)); // 기본으로 convTraces 사용
+                    var traces = JSON.parse(JSON.stringify(
+                        currentGradeType === 'conv' ? plotData.convTraces : plotData.allSubjTraces
+                    ));
                     var layout = createPlotLayout();
                     Plotly.newPlot(plotDiv, traces, layout, {displayModeBar: false, responsive: true, useResizeHandler: true});
                 }
