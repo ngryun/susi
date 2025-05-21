@@ -805,6 +805,59 @@ def plot_selected_depts(
         </div>
         """
 
+        # 대학별 세부유형 요약 섹션을 먼저 추가
+        summary_container_id = f"summary-container-{univ_idx}"
+        html_content += f"""
+        <div class="subtype-container" id="{summary_container_id}" style="background-color: #eef2f7;">
+            <div class="subtype-header" style="color: #1a202c;">세부유형별 요약</div>
+        """
+
+        # 전형 목록 가져오기
+        if selected_subtypes:
+            subtypes_all = sorted(set(df_univ['subtype']) & set(selected_subtypes))
+        else:
+            subtypes_all = sorted(df_univ['subtype'].unique())
+
+        for s_idx, subtype in enumerate(subtypes_all, 1):
+            # 해당 전형의 모든 데이터 추출
+            ss = df_univ[df_univ['subtype'] == subtype]
+
+            # 선택된 모집단위 필터링 적용
+            if selected_depts:
+                ss = ss[ss['dept'].isin(selected_depts)]
+                if ss.empty:
+                    continue
+
+            # 통계 계산
+            conv_stats = compute_stats(ss, "conv_grade")
+            all_subj_stats = compute_stats(ss, "all_subj_grade")
+            conv_stats_html = create_stats_html(conv_stats)
+            all_subj_stats_html = create_stats_html(all_subj_stats)
+
+            # 박스플롯 스크립트 및 통계 테이블 생성
+            plot_script, conv_detail_stats, all_subj_detail_stats = create_plot_data_script(
+                plot_counter, ss, y_positions, marker_styles
+            )
+
+            html_content += f"""
+                <div class="subtype-container" id="subtype-summary-{univ_idx}-{s_idx}" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{subtype}</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
+                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
+                            <div class="plot-container" id="plot-{plot_counter}"></div>
+                        </div>
+                        {plot_script}
+                    </div>
+                </div>
+            """
+            plot_counter += 1
+
+        html_content += """
+        </div>
+        """
+
         # 각 대학에서 모집단위 목록 가져오기
         if selected_depts:
             univ_depts = sorted(set(df_univ['dept']) & set(selected_depts))
@@ -860,57 +913,8 @@ def plot_selected_depts(
             </div>
             """
 
-        # 대학별 전형 요약 섹션 (이전 코드와 유사)
-        summary_container_id = f"summary-container-{univ_idx}"
-        html_content += f"""
-        <div class="subtype-container" id="{summary_container_id}" style="background-color: #eef2f7;">
-            <div class="subtype-header" style="color: #1a202c;">전형별 요약</div>
-        """
-
-        # 전형 목록 가져오기
-        if selected_subtypes:
-            subtypes_all = sorted(set(df_univ['subtype']) & set(selected_subtypes))
-        else:
-            subtypes_all = sorted(df_univ['subtype'].unique())
-
-        for s_idx, subtype in enumerate(subtypes_all, 1):
-            # 해당 전형의 모든 데이터 추출
-            ss = df_univ[df_univ['subtype'] == subtype]
-
-            # 선택된 모집단위 필터링 적용
-            if selected_depts:
-                ss = ss[ss['dept'].isin(selected_depts)]
-                if ss.empty:
-                    continue
-
-            # 통계 계산
-            conv_stats = compute_stats(ss, "conv_grade")
-            all_subj_stats = compute_stats(ss, "all_subj_grade")
-            conv_stats_html = create_stats_html(conv_stats)
-            all_subj_stats_html = create_stats_html(all_subj_stats)
-
-            # 박스플롯 스크립트 및 통계 테이블 생성
-            plot_script, conv_detail_stats, all_subj_detail_stats = create_plot_data_script(
-                plot_counter, ss, y_positions, marker_styles
-            )
-
-            html_content += f"""
-                <div class="subtype-container" id="subtype-summary-{univ_idx}-{s_idx}" style="margin-left: 20px; background-color: #fbfcfe;">
-                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{subtype}</div>
-                    <div class="visualization-container">
-                        <div class="plot-stats-wrapper">
-                            <div id="conv-stats-{plot_counter}" class="stats-container" style="display:none;">{conv_stats_html}</div>
-                            <div id="all-subj-stats-{plot_counter}" class="stats-container">{all_subj_stats_html}</div>
-                            <div class="plot-container" id="plot-{plot_counter}"></div>
-                        </div>
-                        {plot_script}
-                    </div>
-                </div>
-            """
-            plot_counter += 1
-
+        # 대학 컨테이너 닫기
         html_content += """
-        </div>
         </div>
         """
 
@@ -1011,6 +1015,11 @@ def plot_selected_depts(
             var apSummary = container.querySelector('[id^="apptype-summary-"]');
             if (apSummary) {
                 tocHTML += `<div class="toc-subtype-item" onclick="scrollToElement('${apSummary.id}')">전형유형별 요약</div>`;
+            }
+
+            var subtypeSummary = container.querySelector('[id^="summary-container-"]');
+            if (subtypeSummary) {
+                tocHTML += `<div class="toc-subtype-item" onclick="scrollToElement('${subtypeSummary.id}')">세부유형별 요약</div>`;
             }
 
             container.querySelectorAll('[id^="dept-container-"]').forEach(function(deptContainer) {
