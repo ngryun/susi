@@ -7,6 +7,7 @@ import re
 # 1. Create a sample Pandas DataFrame (New data as per subtask)
 data = {
     'univ': ['대학A', '대학A', '대학B', '대학A', '대학B', '대학A'],
+    'apptype': ['수시', '수시', '정시', '수시', '정시', '수시'],
     'subtype': ['전형1', '전형1', '전형2', '전형1', '전형2', '전형1'],
     'dept': ['학과X', '학과X', '학과Y', '학과X', '학과Y', '학과X'],
     'result': ['합격', '충원합격', '불합격', '합격', '불합격', '충원합격'],
@@ -21,11 +22,12 @@ output_filename = "test_report.html"
 # 2. Call plot_selected_depts
 print(f"Generating HTML report to {output_dir/output_filename}...")
 generation_result = plot_selected_depts(
-    sample_df, 
-    output_dir, 
-    selected_depts=['학과X', '학과Y'], 
-    selected_univs=['대학A', '대학B'], 
-    selected_subtypes=['전형1', '전형2'], 
+    sample_df,
+    output_dir,
+    selected_depts=['학과X', '학과Y'],
+    selected_univs=['대학A', '대학B'],
+    selected_subtypes=['전형1', '전형2'],
+    selected_apptypes=['수시', '정시'],
     output_file=output_filename
 )
 print(generation_result)

@@ -51,16 +51,24 @@ def read_input(path: Path) -> pd.DataFrame:
             path,
             header=None,
             skiprows=2,
-            usecols="G,K,M,R,AH,AG",
+            usecols="G,I,K,M,R,AH,AG",
             engine=engine,
         )
-        
-        df.columns = ["univ", "subtype", "dept", "result", "conv_grade", "all_subj_grade"]
+
+        df.columns = [
+            "univ",
+            "apptype",
+            "subtype",
+            "dept",
+            "result",
+            "conv_grade",
+            "all_subj_grade",
+        ]
         df["result"] = df["result"].astype(str).str.strip()
         df["conv_grade"] = pd.to_numeric(df["conv_grade"], errors="coerce")
         df["all_subj_grade"] = pd.to_numeric(df["all_subj_grade"], errors="coerce")
         rows_before = len(df)
-        df = df.dropna(subset=["result", "univ", "dept", "subtype"])
+        df = df.dropna(subset=["result", "univ", "dept", "subtype", "apptype"])
         rows_after = len(df)
         if rows_before > rows_after:
             print(f"경고: {rows_before - rows_after}개 행이 필수 정보 누락으로 제외됨")
