@@ -131,7 +131,7 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
         if len(x_values_conv) == 0:
             conv_traces.append(f"""{{
                 x: [], y: [], type: 'scatter', mode: 'markers', name: '{result}',
-                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                marker: {{ color: '{color_map[result]["fill"]}', line: {{color: '{color_map[result]["border"]}', width: 1.5}}, symbol: '{symbol_map.get(result, "circle")}', size: 12 }},
                 showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
@@ -139,7 +139,7 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
             y_values_json = json.dumps([y_positions.get(result, 0)] * len(x_values_conv))
             conv_traces.append(f"""{{
                 x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
-                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                marker: {{ color: '{color_map[result]["fill"]}', line: {{color: '{color_map[result]["border"]}', width: 1.5}}, symbol: '{symbol_map.get(result, "circle")}', size: 12 }},
                 hovertemplate: '환산등급: %{{x}}<br>{result}<extra></extra>'
             }}""")
 # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
@@ -164,7 +164,7 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
         if len(x_values_all_subj) == 0:
             all_subj_traces.append(f"""{{
                 x: [], y: [], type: 'scatter', mode: 'markers', name: '{result}',
-                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                marker: {{ color: '{color_map[result]["fill"]}', line: {{color: '{color_map[result]["border"]}', width: 1.5}}, symbol: '{symbol_map.get(result, "circle")}', size: 12 }},
                 showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
@@ -172,7 +172,7 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
             y_values_json = json.dumps([y_positions.get(result, 0)] * len(x_values_all_subj))
             all_subj_traces.append(f"""{{
                 x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
-                marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
+                marker: {{ color: '{color_map[result]["fill"]}', line: {{color: '{color_map[result]["border"]}', width: 1.5}}, symbol: '{symbol_map.get(result, "circle")}', size: 12 }},
                 hovertemplate: '전교과등급: %{{x}}<br>{result}<extra></extra>'
             }}""")
 # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
@@ -527,7 +527,10 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
             .legend-container {{ display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 300px; background-color: #f8f8f8; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
             .legend-items-wrapper {{ display: flex; justify-content: flex-start; margin-bottom: 8px; flex-wrap: wrap; }}
             .legend-item {{ display: inline-flex; align-items: center; margin: 5px 10px 5px 0; }}
-            .legend-marker {{ width: 18px; height: 18px; margin-right: 8px; display: inline-block; border-radius: 4px; }}
+            .legend-marker {{ font-size: 18px; margin-right: 6px; display: inline-flex; align-items: center; justify-content: center; }}
+            .legend-pass {{ color: #3366CC; }}
+            .legend-wait {{ color: #109618; }}
+            .legend-fail {{ color: #DC3912; }}
             .legend-text {{ font-size: 14px; color: #333; }}
             .axis-label {{ font-size: 13px; color: #505050; font-weight: bold; margin-top: 5px; }}
             .axis-icon {{ font-size: 16px; margin-right: 5px; }}
@@ -632,9 +635,9 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                     </div>
                     <div class="legend-container">
                         <div class="legend-items-wrapper">
-                            <div class="legend-item"><span class="legend-marker" style="background-color: rgba(51, 102, 204, 0.7);"></span><span class="legend-text">합격 (Y축 상단)</span></div>
-                            <div class="legend-item"><span class="legend-marker" style="background-color: rgba(16, 150, 24, 0.7);"></span><span class="legend-text">충원합격 (Y축 중앙)</span></div>
-                            <div class="legend-item"><span class="legend-marker" style="background-color: rgba(220, 57, 18, 0.7);"></span><span class="legend-text">불합격 (Y축 하단)</span></div>
+                            <div class="legend-item"><span class="legend-marker legend-pass">&#9679;</span><span class="legend-text">합격 (Y축 상단)</span></div>
+                            <div class="legend-item"><span class="legend-marker legend-wait">&#9650;</span><span class="legend-text">충원합격 (Y축 중앙)</span></div>
+                            <div class="legend-item"><span class="legend-marker legend-fail">&#10006;</span><span class="legend-text">불합격 (Y축 하단)</span></div>
                         </div>
                         <div class="axis-label"><span class="axis-icon">↔</span> X축: <span id="grade-type-label">환산등급</span> (1등급 ~ 9등급)</div>
                     </div>
@@ -1037,6 +1040,8 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                 showgrid: false,
                 autorange: false,
                 range: [-0.05, 0.05],
+                zeroline: false,
+                showline: false,
                 tickmode: 'array',
                 tickvals: [0.01, 0.0, -0.03],
                 // 여기서 티커 텍스트를 비워둠 - 모든 그래프의 Y축 레이블 제거
