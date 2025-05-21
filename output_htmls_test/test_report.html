@@ -1,0 +1,1379 @@
+
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>선택된 모집단위 입시 결과</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body, html { margin:0; padding:0; font-family:'Malgun Gothic', '맑은 고딕', sans-serif; background-color: #f4f7f6; }
+            .fixed-header { position: sticky; top: 0; background-color: white; padding: 10px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; width: 100%; border-bottom: 1px solid #ddd; }
+            .header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; align-items: center; }
+            .university-title { text-align: center; font-size: 24px; margin: 10px 0 15px; font-weight: bold; color: #333; }
+            .controls-legend-wrapper { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; flex-wrap: wrap; }
+            .grade-toggle-container { padding: 10px; background-color: #f8f8f8; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); flex: 1; min-width: 280px; margin-right: 10px; text-align: center; }
+            .grade-toggle-btn { padding: 10px 18px; margin: 0 5px; font-size: 14px; cursor: pointer; border: 1px solid #ccc; border-radius: 6px; background-color: white; transition: all 0.2s ease-in-out; font-weight: 500; }
+            .grade-toggle-btn:hover { background-color: #e9e9e9; border-color: #bbb; }
+            .grade-toggle-btn.active { background-color: #007bff; color: white; border-color: #0056b3; box-shadow: 0 0 5px rgba(0,123,255,0.5); }
+            .legend-container { display: flex; flex-direction: column; align-items: flex-start; flex: 1; min-width: 300px; background-color: #f8f8f8; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+            .legend-items-wrapper { display: flex; justify-content: flex-start; margin-bottom: 8px; flex-wrap: wrap; }
+            .legend-item { display: inline-flex; align-items: center; margin: 5px 10px 5px 0; }
+            .legend-marker { width: 18px; height: 18px; margin-right: 8px; display: inline-block; border-radius: 4px; }
+            .legend-text { font-size: 14px; color: #333; }
+            .axis-label { font-size: 13px; color: #505050; font-weight: bold; margin-top: 5px; }
+            .axis-icon { font-size: 16px; margin-right: 5px; }
+            .layout { display: flex; justify-content: center; align-items: flex-start; max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+            .toc-container { flex: 0 0 220px; position: sticky; top: 160px; margin-right: 25px; background-color: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; max-height: calc(100vh - 200px); overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 900; }
+            .toc-header { font-weight: bold; font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #333; }
+            .toc-university { font-weight: bold; margin-top: 10px; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background-color 0.2s; color: #0056b3; }
+            .toc-university:hover { background-color: #e9ecef; }
+            .toc-subtype-item { margin-left: 18px; font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }
+            .toc-subtype-item:hover { background-color: #f1f3f5; }
+            .main-content { flex: 1 1 auto; max-width: calc(100% - 245px); padding-top: 20px; }
+            .dept-container { margin-bottom: 50px; border: 1px solid #d1d9e6; border-radius: 12px; padding: 25px; background-color: #ffffff; box-shadow: 0 6px 18px rgba(0,0,0,0.07); }
+            .dept-header { margin-bottom: 20px; font-weight: bold; font-size: 22px; color: #2c3e50; border-bottom: 2px solid #007bff; padding-bottom: 12px; }
+            .subtype-container { margin-bottom: 30px; border: 1px solid #e7eaf0; border-radius: 8px; padding: 20px; background-color: #fdfdfd; }
+            .subtype-header { margin-bottom: 15px; font-weight: bold; font-size: 18px; color: #34495e; }
+            .visualization-container { display: flex; flex-direction: column; width: 100%; margin-bottom: 20px; }
+            .plot-stats-wrapper { width: 100%; margin-bottom: 10px; }
+            .stats-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+            .stats-item { padding: 6px 12px; border-radius: 6px; background-color: #f0f4f7; white-space: nowrap; font-size: 14px; color: #333; border: 1px solid #d6dde3; }
+            .stats-total { font-weight: bold; background-color: #e2e8ef; border-color: #c8d0d8; }
+            .stats-pass { border-left: 4px solid #007bff; }
+            .stats-wait { border-left: 4px solid #28a745; }
+            .stats-fail { border-left: 4px solid #dc3545; }
+            .highlight-rate, .highlight-fail-rate { font-weight: bold; }
+            .highlight-rate { color: #0056b3; }
+            .highlight-fail-rate { color: #c82333; }
+            .highlight-mean { font-weight: bold; color: #1e7e34; }
+            .highlight-range { color: #5a6268; font-size: 13px; }
+            .plot-container { height: 200px; width: 100%; margin: 0 auto; }
+            .stats-tables-wrapper { width: 100%; margin-bottom: 30px; }
+            .additional-stats-container { width: 100%; padding: 10px 0; background-color: transparent; border-radius: 0; font-size: 13px; }
+            .stats-detail-title { font-weight: bold; margin-bottom: 8px; color: #333; font-size: 15px; }
+            .stats-table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
+            .stats-table th, .stats-table td { padding: 8px; text-align: center; border: 1px solid #dee2e6; }
+            .stats-table th { background-color: #e9ecef; font-weight: bold; color: #495057; }
+            .stats-table .pass-row td { background-color: rgba(0, 123, 255, 0.05); }
+            .stats-table .fail-row td { background-color: rgba(220, 53, 69, 0.05); }
+            .stats-table .waitlist-row td { background-color: rgba(40, 167, 69, 0.05); }
+            .no-stats { font-style: italic; color: #6c757d; text-align: center; padding: 15px; }
+            /* 추가 시각화를 위한 스타일 */
+            .advanced-visualizations-container { width: 100%; margin-top: 20px; }
+            .visualization-row { display: flex; margin-bottom: 30px; gap: 20px; flex-wrap: wrap; }
+            .half-width-visualization { flex: 1 1 calc(50% - 10px); min-width: 400px; background-color: #FFFFFF; border-radius: 12px; padding: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
+            .full-width-visualization { flex: 1 1 100%; background-color: #FFFFFF; border-radius: 12px; padding: 20px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); }
+            .visualization-title { font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #506380; text-align: center; }
+            @media (max-width: 992px) {
+                .layout { flex-direction: column; align-items: center; }
+                .toc-container { position: static; width: 100%; max-width: 600px; margin-right: 0; margin-bottom: 20px; max-height: 300px; }
+                .main-content { max-width: 100%; width: 100%; }
+                .controls-legend-wrapper { flex-direction: column; align-items: stretch; }
+                .grade-toggle-container, .legend-container { width: auto; margin-right: 0; margin-bottom: 10px; }
+                .visualization-row { flex-direction: column; }
+                .half-width-visualization { min-width: 100%; margin-bottom: 15px; }
+            }
+            @media (max-width: 768px) {
+                .fixed-header { padding: 5px 0; }
+                .header-content { padding: 0 10px; }
+                .university-title { font-size: 20px; margin-bottom: 10px; }
+                .grade-toggle-btn { padding: 8px 12px; font-size: 13px; }
+                .legend-item { margin: 3px 8px 3px 0; }
+                .legend-text, .axis-label { font-size: 12px; }
+                .dept-header { font-size: 20px; }
+                .subtype-header { font-size: 17px; }
+                .stats-item { font-size: 13px; padding: 5px 10px; }
+                .plot-container { height: 200px; }
+                .additional-stats-container { padding: 10px 0; }
+                .stats-detail-title { font-size: 14px; }
+                .stats-table th, .stats-table td { padding: 6px; }
+            }
+            .filter-info-container {
+                margin: 15px 0;
+                background-color: #e9f7fe;
+                border: 1px solid #b8e3ff;
+                padding: 15px;
+                border-radius: 8px;
+            }
+            .filter-info-container h3 {
+                margin-top: 0;
+                color: #0275d8;
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            .filter-info-container ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            .filter-info-container li {
+                margin-bottom: 5px;
+                font-size: 14px;
+            }
+        </style>
+
+    </head>
+    <body>
+        <div class="fixed-header">
+            <div class="header-content">
+                <div class="university-title">선택된 모집단위 입시 결과</div>
+                <div class="controls-legend-wrapper">
+                    <div class="grade-toggle-container">
+                        <button id="btn-conv-grade" class="grade-toggle-btn active" onclick="switchGradeType('conv')">환산등급</button>
+                        <button id="btn-all-subj-grade" class="grade-toggle-btn" onclick="switchGradeType('all_subj')">전교과100 등급</button>
+                    </div>
+                    <div class="legend-container">
+                        <div class="legend-items-wrapper">
+                            <div class="legend-item"><span class="legend-marker" style="color: #3366CC; font-size: 1.2em;">●</span><span class="legend-text" style="margin-left: 5px;">합격</span></div>
+                            <div class="legend-item"><span class="legend-marker" style="color: #109618; font-size: 1.2em;">▲</span><span class="legend-text" style="margin-left: 5px;">충원합격</span></div>
+                            <div class="legend-item"><span class="legend-marker" style="color: #DC3912; font-size: 1.2em;">✕</span><span class="legend-text" style="margin-left: 5px;">불합격</span></div>
+                        </div>
+                        <div class="axis-label"><span class="axis-icon">↔</span> X축: <span id="grade-type-label">환산등급</span> (1등급 ~ 9등급)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layout">
+            <aside class="toc-container">
+                <div class="toc-header">목차</div>
+                <div id="toc-content"></div>
+            </aside>
+            <main class="main-content">
+
+        <div class="dept-container" id="univ-1">
+            <div class="dept-header">대학A</div>
+        
+            <div class="subtype-container" id="dept-container-1-1">
+                <div class="subtype-header" style="color: #34495e;">1) 학과X</div>
+            
+                <div class="subtype-container" id="subtype-1-1-1" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">1) 전형1</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-1" class="stats-container"><div class="stats-item stats-total">총 4명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(100.0%)</span> <span class="highlight-range">등급 1.3~1.9</span>, <span class="highlight-mean">평균 1.60</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(50.0%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(50.0%)</span></div></div>
+                            <div id="all-subj-stats-1" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 4명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(100.0%)</span> <span class="highlight-range">등급 1.4~2.0</span>, <span class="highlight-mean">평균 1.70</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(50.0%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(50.0%)</span></div></div>
+                            <div class="plot-container" id="plot-1"></div>
+                        </div>
+                        
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["1"] = {
+        convTraces: [ {
+                x: [1.5, 1.3], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [1.7, 1.9], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            } ],
+        allSubjTraces: [ {
+                x: [1.6, 1.4], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [1.8, 2.0], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            } ]
+    };
+    </script>
+    
+                        <div class="stats-tables-wrapper">
+                            <div id="conv-additional-stats-1" class="additional-stats-container">
+                                
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.40</td>
+                <td>0.14</td>
+                <td>1.40</td>
+                <td>1.50</td>
+                <td>1.30</td>
+                <td>1.35 - 1.45</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.80</td>
+                <td>0.14</td>
+                <td>1.80</td>
+                <td>1.90</td>
+                <td>1.70</td>
+                <td>1.75 - 1.85</td>
+            </tr>
+        <tr><td>불합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+        </tbody>
+    </table>
+    
+                            </div>
+                            <div id="all-subj-additional-stats-1" class="additional-stats-container" style="display:none;">
+                                
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.50</td>
+                <td>0.14</td>
+                <td>1.50</td>
+                <td>1.60</td>
+                <td>1.40</td>
+                <td>1.45 - 1.55</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.90</td>
+                <td>0.14</td>
+                <td>1.90</td>
+                <td>2.00</td>
+                <td>1.80</td>
+                <td>1.85 - 1.95</td>
+            </tr>
+        <tr><td>불합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+        </tbody>
+    </table>
+    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            <div class="subtype-container" id="dept-summary-1-1" style="margin-left: 20px; background-color: #f0f4f8;">
+                <div class="subtype-header" style="font-size: 16px; color: #2c3e50;">전체 전형 통합</div>
+                <div class="visualization-container">
+                    <div class="plot-stats-wrapper">
+                        <div id="conv-stats-2" class="stats-container"><div class="stats-item stats-total">총 4명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(100.0%)</span> <span class="highlight-range">등급 1.3~1.9</span>, <span class="highlight-mean">평균 1.60</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(50.0%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(50.0%)</span></div></div>
+                        <div id="all-subj-stats-2" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 4명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(100.0%)</span> <span class="highlight-range">등급 1.4~2.0</span>, <span class="highlight-mean">평균 1.70</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(50.0%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(50.0%)</span></div></div>
+                        <div class="plot-container" id="plot-2"></div>
+                    </div>
+                    
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["2"] = {
+        convTraces: [ {
+                x: [1.5, 1.3], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [1.7, 1.9], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            } ],
+        allSubjTraces: [ {
+                x: [1.6, 1.4], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [1.8, 2.0], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            } ]
+    };
+    </script>
+    
+                    <div class="stats-tables-wrapper">
+                        <div id="conv-additional-stats-2" class="additional-stats-container">
+                            
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.40</td>
+                <td>0.14</td>
+                <td>1.40</td>
+                <td>1.50</td>
+                <td>1.30</td>
+                <td>1.35 - 1.45</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.80</td>
+                <td>0.14</td>
+                <td>1.80</td>
+                <td>1.90</td>
+                <td>1.70</td>
+                <td>1.75 - 1.85</td>
+            </tr>
+        <tr><td>불합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+        </tbody>
+    </table>
+    
+                        </div>
+                        <div id="all-subj-additional-stats-2" class="additional-stats-container" style="display:none;">
+                            
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.50</td>
+                <td>0.14</td>
+                <td>1.50</td>
+                <td>1.60</td>
+                <td>1.40</td>
+                <td>1.45 - 1.55</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.90</td>
+                <td>0.14</td>
+                <td>1.90</td>
+                <td>2.00</td>
+                <td>1.80</td>
+                <td>1.85 - 1.95</td>
+            </tr>
+        <tr><td>불합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+        </tbody>
+    </table>
+    
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            </div>
+            
+        <div class="subtype-container" id="summary-container-1" style="background-color: #eef2f7;">
+            <div class="subtype-header" style="color: #1a202c;">전형별 요약</div>
+        
+                <div class="subtype-container" id="subtype-summary-1-1" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">전형1</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-3" class="stats-container"><div class="stats-item stats-total">총 4명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(100.0%)</span> <span class="highlight-range">등급 1.3~1.9</span>, <span class="highlight-mean">평균 1.60</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(50.0%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(50.0%)</span></div></div>
+                            <div id="all-subj-stats-3" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 4명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(100.0%)</span> <span class="highlight-range">등급 1.4~2.0</span>, <span class="highlight-mean">평균 1.70</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(50.0%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(50.0%)</span></div></div>
+                            <div class="plot-container" id="plot-3"></div>
+                        </div>
+                        
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["3"] = {
+        convTraces: [ {
+                x: [1.5, 1.3], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [1.7, 1.9], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            } ],
+        allSubjTraces: [ {
+                x: [1.6, 1.4], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [1.8, 2.0], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            } ]
+    };
+    </script>
+    
+                        <div class="stats-tables-wrapper">
+                            <div id="conv-additional-stats-3" class="additional-stats-container">
+                                
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.40</td>
+                <td>0.14</td>
+                <td>1.40</td>
+                <td>1.50</td>
+                <td>1.30</td>
+                <td>1.35 - 1.45</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.80</td>
+                <td>0.14</td>
+                <td>1.80</td>
+                <td>1.90</td>
+                <td>1.70</td>
+                <td>1.75 - 1.85</td>
+            </tr>
+        <tr><td>불합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+        </tbody>
+    </table>
+    
+                            </div>
+                            <div id="all-subj-additional-stats-3" class="additional-stats-container" style="display:none;">
+                                
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.50</td>
+                <td>0.14</td>
+                <td>1.50</td>
+                <td>1.60</td>
+                <td>1.40</td>
+                <td>1.45 - 1.55</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.90</td>
+                <td>0.14</td>
+                <td>1.90</td>
+                <td>2.00</td>
+                <td>1.80</td>
+                <td>1.85 - 1.95</td>
+            </tr>
+        <tr><td>불합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+        </tbody>
+    </table>
+    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+        </div>
+        </div>
+        
+        <div class="dept-container" id="univ-2">
+            <div class="dept-header">대학B</div>
+        
+            <div class="subtype-container" id="dept-container-2-1">
+                <div class="subtype-header" style="color: #34495e;">1) 학과Y</div>
+            
+                <div class="subtype-container" id="subtype-2-1-1" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">1) 전형2</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-4" class="stats-container"><div class="stats-item stats-total">총 2명</div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(100.0%)</span></div></div>
+                            <div id="all-subj-stats-4" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 2명</div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(100.0%)</span></div></div>
+                            <div class="plot-container" id="plot-4"></div>
+                        </div>
+                        
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["4"] = {
+        convTraces: [ {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [2.5, 2.8], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            } ],
+        allSubjTraces: [ {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [2.6, 2.9], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            } ]
+    };
+    </script>
+    
+                        <div class="stats-tables-wrapper">
+                            <div id="conv-additional-stats-4" class="additional-stats-container">
+                                
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr><td>합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr><tr><td>충원합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.65</td>
+                <td>0.21</td>
+                <td>2.65</td>
+                <td>2.80</td>
+                <td>2.50</td>
+                <td>2.58 - 2.72</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                            </div>
+                            <div id="all-subj-additional-stats-4" class="additional-stats-container" style="display:none;">
+                                
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr><td>합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr><tr><td>충원합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.75</td>
+                <td>0.21</td>
+                <td>2.75</td>
+                <td>2.90</td>
+                <td>2.60</td>
+                <td>2.67 - 2.83</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            <div class="subtype-container" id="dept-summary-2-1" style="margin-left: 20px; background-color: #f0f4f8;">
+                <div class="subtype-header" style="font-size: 16px; color: #2c3e50;">전체 전형 통합</div>
+                <div class="visualization-container">
+                    <div class="plot-stats-wrapper">
+                        <div id="conv-stats-5" class="stats-container"><div class="stats-item stats-total">총 2명</div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(100.0%)</span></div></div>
+                        <div id="all-subj-stats-5" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 2명</div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(100.0%)</span></div></div>
+                        <div class="plot-container" id="plot-5"></div>
+                    </div>
+                    
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["5"] = {
+        convTraces: [ {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [2.5, 2.8], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            } ],
+        allSubjTraces: [ {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [2.6, 2.9], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            } ]
+    };
+    </script>
+    
+                    <div class="stats-tables-wrapper">
+                        <div id="conv-additional-stats-5" class="additional-stats-container">
+                            
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr><td>합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr><tr><td>충원합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.65</td>
+                <td>0.21</td>
+                <td>2.65</td>
+                <td>2.80</td>
+                <td>2.50</td>
+                <td>2.58 - 2.72</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                        </div>
+                        <div id="all-subj-additional-stats-5" class="additional-stats-container" style="display:none;">
+                            
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr><td>합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr><tr><td>충원합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.75</td>
+                <td>0.21</td>
+                <td>2.75</td>
+                <td>2.90</td>
+                <td>2.60</td>
+                <td>2.67 - 2.83</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            </div>
+            
+        <div class="subtype-container" id="summary-container-2" style="background-color: #eef2f7;">
+            <div class="subtype-header" style="color: #1a202c;">전형별 요약</div>
+        
+                <div class="subtype-container" id="subtype-summary-2-1" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">전형2</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-6" class="stats-container"><div class="stats-item stats-total">총 2명</div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(100.0%)</span></div></div>
+                            <div id="all-subj-stats-6" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 2명</div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(100.0%)</span></div></div>
+                            <div class="plot-container" id="plot-6"></div>
+                        </div>
+                        
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["6"] = {
+        convTraces: [ {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [2.5, 2.8], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            } ],
+        allSubjTraces: [ {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [], y: [], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                showlegend: false, hoverinfo: 'skip'
+            }, {
+                x: [2.6, 2.9], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            } ]
+    };
+    </script>
+    
+                        <div class="stats-tables-wrapper">
+                            <div id="conv-additional-stats-6" class="additional-stats-container">
+                                
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr><td>합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr><tr><td>충원합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.65</td>
+                <td>0.21</td>
+                <td>2.65</td>
+                <td>2.80</td>
+                <td>2.50</td>
+                <td>2.58 - 2.72</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                            </div>
+                            <div id="all-subj-additional-stats-6" class="additional-stats-container" style="display:none;">
+                                
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr><td>합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr><tr><td>충원합격</td><td colspan='7' style='text-align:center;'>데이터 없음</td></tr>
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.75</td>
+                <td>0.21</td>
+                <td>2.75</td>
+                <td>2.90</td>
+                <td>2.60</td>
+                <td>2.67 - 2.83</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+        </div>
+        </div>
+        
+    <div class="dept-container" id="overall-summary">
+        <div class="dept-header" style="color: #2c3e50; border-bottom: 2px solid #e74c3c;">전체 데이터 요약</div>
+        <div class="subtype-container" style="background-color: #f8f9fa;">
+            <div class="subtype-header" style="color: #1a202c;">선택된 모든 필터에 대한 종합 분석</div>
+    
+        <div class="visualization-container">
+            <div class="plot-stats-wrapper">
+                <div id="conv-stats-7" class="stats-container"><div class="stats-item stats-total">총 6명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(66.7%)</span> <span class="highlight-range">등급 1.3~1.9</span>, <span class="highlight-mean">평균 1.60</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(33.3%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(33.3%)</span></div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(33.3%)</span></div></div>
+                <div id="all-subj-stats-7" class="stats-container" style="display:none;"><div class="stats-item stats-total">총 6명</div><div class="stats-item stats-pass">합격(전체): 4명 <span class="highlight-rate">(66.7%)</span> <span class="highlight-range">등급 1.4~2.0</span>, <span class="highlight-mean">평균 1.70</span></div><div class="stats-item stats-pass">합격(일반): 2명 <span class="highlight-rate">(33.3%)</span></div><div class="stats-item stats-wait">합격(충원): 2명 <span class="highlight-rate">(33.3%)</span></div><div class="stats-item stats-fail">불합격: 2명 <span class="highlight-fail-rate">(33.3%)</span></div></div>
+                <div class="plot-container" id="plot-7"></div>
+            </div>
+            
+    <script>
+    if (!window.plotsData) window.plotsData = {};
+    window.plotsData["7"] = {
+        convTraces: [ {
+                x: [1.5, 1.3], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [1.7, 1.9], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            }, {
+                x: [2.5, 2.8], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '환산등급: %{x}<extra></extra>'
+            } ],
+        allSubjTraces: [ {
+                x: [1.6, 1.4], y: [0.01, 0.01], type: 'scatter', mode: 'markers', name: '합격',
+                marker: { color: '#3366CC', symbol: 'circle', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [1.8, 2.0], y: [0.0, 0.0], type: 'scatter', mode: 'markers', name: '충원합격',
+                marker: { color: '#109618', symbol: 'triangle-up', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            }, {
+                x: [2.6, 2.9], y: [-0.03, -0.03], type: 'scatter', mode: 'markers', name: '불합격',
+                marker: { color: '#DC3912', symbol: 'x', size: 8 },
+                hovertemplate: '전교과등급: %{x}<extra></extra>'
+            } ]
+    };
+    </script>
+    
+            <div class="stats-tables-wrapper">
+                <div id="conv-additional-stats-7" class="additional-stats-container">
+                    
+    <div class="stats-detail-title">환산등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.40</td>
+                <td>0.14</td>
+                <td>1.40</td>
+                <td>1.50</td>
+                <td>1.30</td>
+                <td>1.35 - 1.45</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.80</td>
+                <td>0.14</td>
+                <td>1.80</td>
+                <td>1.90</td>
+                <td>1.70</td>
+                <td>1.75 - 1.85</td>
+            </tr>
+        
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.65</td>
+                <td>0.21</td>
+                <td>2.65</td>
+                <td>2.80</td>
+                <td>2.50</td>
+                <td>2.58 - 2.72</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                </div>
+                <div id="all-subj-additional-stats-7" class="additional-stats-container" style="display:none;">
+                    
+    <div class="stats-detail-title">전교과등급 상세 통계</div>
+    <table class="stats-table">
+        <thead>
+            <tr>
+    <th>결과</th><th>데이터 수</th><th>평균</th><th>표준편차</th><th>중앙값</th><th>최댓값</th><th>최솟값</th><th>Q1-Q3 범위</th>
+        </tr>
+    </thead>
+    <tbody>
+    
+            <tr class="pass-row">
+                <td>합격</td>
+                <td>2명</td>
+                <td>1.50</td>
+                <td>0.14</td>
+                <td>1.50</td>
+                <td>1.60</td>
+                <td>1.40</td>
+                <td>1.45 - 1.55</td>
+            </tr>
+        
+            <tr class="waitlist-row">
+                <td>충원합격</td>
+                <td>2명</td>
+                <td>1.90</td>
+                <td>0.14</td>
+                <td>1.90</td>
+                <td>2.00</td>
+                <td>1.80</td>
+                <td>1.85 - 1.95</td>
+            </tr>
+        
+            <tr class="fail-row">
+                <td>불합격</td>
+                <td>2명</td>
+                <td>2.75</td>
+                <td>0.21</td>
+                <td>2.75</td>
+                <td>2.90</td>
+                <td>2.60</td>
+                <td>2.67 - 2.83</td>
+            </tr>
+        
+        </tbody>
+    </table>
+    
+                </div>
+            </div>
+        </div>
+    
+    <script>
+    if (!window.advancedVisualizationData) window.advancedVisualizationData = {};
+    window.advancedVisualizationData["7"] = {
+        donutChartTraces: [ {
+        values: [2, 2, 2],
+        labels: ["\ud569\uaca9", "\ucda9\uc6d0\ud569\uaca9", "\ubd88\ud569\uaca9"],
+        type: 'pie',
+        hole: 0.6,
+        marker: { colors: ["#A8D8EA", "#A8E6CE", "#FFAAA7"] },
+        textinfo: 'label+percent',
+        textposition: 'outside',
+        hoverinfo: 'label+value+percent',
+        insidetextorientation: 'radial'
+    } ],
+        convGradeHistograms: [ {
+            x: [1.5, 1.7, 1.3, 1.9],
+            type: 'histogram',
+            name: '합격(충원포함)',
+            opacity: 0.7,
+            marker: { color: '#A8D8EA' },
+            xbins: { start: 1, end: 9, size: 0.25 },
+            hoverinfo: 'y+x+name',
+            hoverlabel: { bgcolor: '#A8D8EA' }
+        }, {
+            x: [2.5, 2.8],
+            type: 'histogram',
+            name: '불합격',
+            opacity: 0.7,
+            marker: { color: '#FFAAA7' },
+            xbins: { start: 1, end: 9, size: 0.25 },
+            hoverinfo: 'y+x+name',
+            hoverlabel: { bgcolor: '#FFAAA7' }
+        } ],
+        allSubjGradeHistograms: [ {
+            x: [1.6, 1.8, 1.4, 2.0],
+            type: 'histogram',
+            name: '합격(충원포함)',
+            opacity: 0.7,
+            marker: { color: '#A8D8EA' },
+            xbins: { start: 1, end: 9, size: 0.25 },
+            hoverinfo: 'y+x+name',
+            hoverlabel: { bgcolor: '#A8D8EA' }
+        }, {
+            x: [2.6, 2.9],
+            type: 'histogram',
+            name: '불합격',
+            opacity: 0.7,
+            marker: { color: '#FFAAA7' },
+            xbins: { start: 1, end: 9, size: 0.25 },
+            hoverinfo: 'y+x+name',
+            hoverlabel: { bgcolor: '#FFAAA7' }
+        } ],
+        univPassRates: [  ]
+    };
+    </script>
+    
+    <div class="advanced-visualizations-container">
+        <div class="visualization-row">
+            <div class="half-width-visualization">
+                <div class="visualization-title">결과별 분포</div>
+                <div class="plot-container" id="donut-chart-7" style="height: 400px;"></div>
+            </div>
+            <div class="half-width-visualization">
+                <div class="visualization-title">대학별 합격률 (상위 10개)</div>
+                <div class="plot-container" id="univ-pass-rates-7" style="height: 400px;"></div>
+            </div>
+        </div>
+        <div class="visualization-row">
+            <div class="full-width-visualization">
+                <div class="visualization-title">환산등급 분포</div>
+                <div class="plot-container" id="conv-grade-histogram-7" style="height: 350px;"></div>
+            </div>
+        </div>
+        <div class="visualization-row">
+            <div class="full-width-visualization">
+                <div class="visualization-title">전교과등급 분포</div>
+                <div class="plot-container" id="all-subj-grade-histogram-7" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        initAdvancedVisualizations("7");
+    });
+
+    function initAdvancedVisualizations(plotId) {
+        if (!window.Plotly || !window.advancedVisualizationData || !window.advancedVisualizationData[plotId]) return;
+
+        var data = window.advancedVisualizationData[plotId];
+
+        // 결과별 도넛 차트
+        if (data.donutChartTraces && data.donutChartTraces.length > 0 && document.getElementById('donut-chart-' + plotId)) {
+            try {
+                Plotly.newPlot('donut-chart-' + plotId, data.donutChartTraces, {
+                    title: '',
+                    legend: { orientation: 'h', y: -0.1, x: 0.5, xanchor: 'center' },
+                    margin: { t: 30, b: 50, l: 50, r: 50 },
+                    autosize: true,
+                    height: 350,
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA'
+                }, { displayModeBar: false, responsive: true });
+            } catch (e) { console.error("도넛 차트 생성 오류:", e); }
+        }
+
+        // 대학별 합격률
+        if (data.univPassRates && data.univPassRates.length > 0 && document.getElementById('univ-pass-rates-' + plotId)) {
+           try {
+                Plotly.newPlot('univ-pass-rates-' + plotId, data.univPassRates, {
+                    title: '',
+                    showlegend: false,
+                    margin: { t: 30, b: 50, l: 150, r: 50 },
+                    xaxis: { title: '합격률 (%)', range: [0, 100] },
+                    yaxis: { automargin: true },
+                    autosize: true,
+                    height: 350,
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA'
+                }, { displayModeBar: false, responsive: true });
+            } catch (e) { console.error("대학별 합격률 차트 생성 오류:", e); }
+        }
+
+        // 환산등급 히스토그램
+        if (data.convGradeHistograms && data.convGradeHistograms.length > 0 && document.getElementById('conv-grade-histogram-' + plotId)) {
+            try {
+                Plotly.newPlot('conv-grade-histogram-' + plotId, data.convGradeHistograms, {
+                    title: '',
+                    barmode: 'overlay',
+                    bargap: 0.1,
+                    xaxis: { title: '환산등급', range: [1, 9], dtick: 1 },
+                    yaxis: { title: '인원 (명)' },
+                    legend: { orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' },
+                    margin: { t: 30, b: 60, l: 60, r: 50 },
+                    autosize: true,
+                    height: 350,
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA'
+                }, { displayModeBar: false, responsive: true });
+            } catch (e) { console.error("환산등급 히스토그램 생성 오류:", e); }
+        }
+
+        // 전교과등급 히스토그램
+        if (data.allSubjGradeHistograms && data.allSubjGradeHistograms.length > 0 && document.getElementById('all-subj-grade-histogram-' + plotId)) {
+            try {
+                Plotly.newPlot('all-subj-grade-histogram-' + plotId, data.allSubjGradeHistograms, {
+                    title: '',
+                    barmode: 'overlay',
+                    bargap: 0.1,
+                    xaxis: { title: '전교과등급', range: [1, 9], dtick: 1 },
+                    yaxis: { title: '인원 (명)' },
+                    legend: { orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' },
+                    margin: { t: 30, b: 60, l: 60, r: 50 },
+                    autosize: true,
+                    height: 350,
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA'
+                }, { displayModeBar: false, responsive: true });
+            } catch (e) { console.error("전교과등급 히스토그램 생성 오류:", e); }
+        }
+    }
+    </script>
+    <div class='filter-info-container'><h3>적용된 필터</h3><ul><li>선택된 대학: 대학A, 대학B</li><li>선택된 전형: 전형1, 전형2</li><li>선택된 모집단위: 학과X, 학과Y</li></ul></div>
+        </div>
+    </div>
+    
+    <script>
+    var currentGradeType = 'conv';
+    var plotsInitialized = false;
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('페이지 초기화 시작...');
+        var toc = document.getElementById('toc-content');
+        var tocHTML = '';
+
+        // 대학별 컨테이너 순회
+        document.querySelectorAll('.dept-container').forEach(function(container) {
+            var uniId = container.id;
+            var uniHeader = container.querySelector('.dept-header');
+            if (!uniHeader) return; // dept-header가 없는 경우 건너뛰기 (예: 전체 요약)
+            var uniTitle = uniHeader.textContent;
+
+            // '전체 데이터 요약'은 별도로 처리
+            if (uniId === 'overall-summary') return;
+
+            tocHTML += `<div class="toc-university" onclick="scrollToElement('${uniId}')">${uniTitle}</div>`;
+
+            // 모집단위 컨테이너 찾기 (dept-container- 접두사로 시작하는 ID)
+            container.querySelectorAll('[id^="dept-container-"]').forEach(function(deptContainer) {
+                var deptHeader = deptContainer.querySelector('.subtype-header');
+                if (deptHeader) {
+                    var deptId = deptContainer.id;
+                    var deptTitle = deptHeader.textContent.replace(/^\d+\)\s*/, '').trim();
+
+                    // 모집단위 추가
+                    tocHTML += `<div class="toc-dept-item" style="margin-left: 18px; font-weight: bold; margin-top: 8px; color: #0056b3;">${deptTitle}</div>`;
+
+                    // 전형 컨테이너 찾기
+                    deptContainer.querySelectorAll('[id^="subtype-"]').forEach(function(subtypeContainer) {
+                        var subtypeHeader = subtypeContainer.querySelector('.subtype-header');
+                        if (subtypeHeader) {
+                            var subtypeId = subtypeContainer.id;
+                            var subtypeTitle = subtypeHeader.textContent.replace(/^\d+\)\s*/, '').trim();
+
+                            // 전형 추가
+                            tocHTML += `<div class="toc-subtype-item" style="margin-left: 36px;" onclick="scrollToElement('${subtypeId}')">${subtypeTitle}</div>`;
+                        }
+                    });
+
+                    // 모집단위 요약 추가
+                    var deptSummaryId = deptId.replace('container', 'summary');
+                    var deptSummaryElement = document.getElementById(deptSummaryId);
+                    if (deptSummaryElement) {
+                        var summaryHeader = deptSummaryElement.querySelector('.subtype-header');
+                        if (summaryHeader && summaryHeader.textContent.includes('전체 전형 통합')) { // 정확한 요약 항목인지 확인
+                            tocHTML += `<div class="toc-subtype-item" style="margin-left: 36px; font-style: italic;" onclick="scrollToElement('${deptSummaryId}')">전체 전형 통합</div>`;
+                        }
+                    }
+                }
+            });
+
+            // 대학별 전형 요약 추가 (summary-container- 접두사로 시작하는 ID)
+            var univSummaryId = `summary-container-${uniId.split('-')[1]}`;
+            var summaryElement = document.getElementById(univSummaryId);
+            if (summaryElement) {
+                var summaryHeader = summaryElement.querySelector('.subtype-header'); // 전형별 요약 타이틀
+                if (summaryHeader && summaryHeader.textContent.includes('전형별 요약')) {
+                     tocHTML += `<div class="toc-subtype-item" style="margin-left: 18px; font-weight: bold; color: #2a4365; margin-top: 8px;" onclick="scrollToElement('${univSummaryId}')">${summaryHeader.textContent}</div>`;
+                }
+            }
+        });
+
+        // 전체 요약 섹션 목차에 추가
+        var overallSummaryElem = document.getElementById('overall-summary');
+        if (overallSummaryElem) {
+            var overallHeader = overallSummaryElem.querySelector('.dept-header');
+            if (overallHeader) {
+                 tocHTML += `<div class="toc-university" onclick="scrollToElement('overall-summary')" style="margin-top: 20px; color: #e74c3c;">${overallHeader.textContent}</div>`;
+            }
+        }
+        toc.innerHTML = tocHTML;
+        initializeAllPlots();
+
+    });
+
+    function initializeAllPlots() {
+        if (plotsInitialized || !window.Plotly) return;
+        console.log('모든 플롯 초기화 중...');
+        var plotContainers = document.querySelectorAll('.plot-container[id^="plot-"]');
+        plotContainers.forEach(function(plotDiv) {
+            var plotId = plotDiv.id;
+            var numericId = plotId.split('-')[1];
+            try {
+                // 기본 박스플롯 처리
+                if(plotId.startsWith('plot-')) {
+                    if (!window.plotsData || !window.plotsData[numericId]) {
+                        console.error('플롯 데이터를 찾을 수 없음:', numericId);
+                        plotDiv.innerHTML = '<p style="text-align:center; color:red;">플롯 데이터 로드 실패</p>';
+                        return;
+                    }
+                    var plotData = window.plotsData[numericId];
+                    var traces = JSON.parse(JSON.stringify(plotData.convTraces)); // 기본으로 convTraces 사용
+                    var layout = createPlotLayout();
+                    Plotly.newPlot(plotDiv, traces, layout, {displayModeBar: false, responsive: true, useResizeHandler: true});
+                }
+                // 추가 시각화는 별도 함수로 처리됨 (donut-chart, histograms 등)
+            } catch (error) {
+                console.error(`플롯 ${numericId} 초기화 오류:`, error);
+                plotDiv.innerHTML = `<p style="text-align:center; color:red;">플롯 생성 중 오류 발생: ${error.message}</p>`;
+            }
+        });
+        plotsInitialized = true;
+        console.log('모든 플롯 초기화 완료');
+    }
+
+    function createPlotLayout() {
+        return {
+            height: 200,
+            autosize: true,
+            margin: {t: 15, b: 50, l: 60, r: 30},
+            bargap: 0.2,
+            xaxis: {
+                range: [0.5, 9.5],
+                showgrid: true,
+                gridcolor: [
+                    '#e0e0e0', '#b0b0b0', '#e0e0e0', '#b0b0b0', '#e0e0e0',
+                    '#b0b0b0', '#e0e0e0', '#b0b0b0', '#e0e0e0'
+                ],
+                gridwidth: [
+                    0.5, 1.0, 0.5, 1.0, 0.5, 1.0, 0.5, 1.0, 0.5
+                ],
+                griddash: [
+                    'dot','solid','dot','solid','dot','solid','dot','solid','dot'
+                ],
+                title: { text: '등급', font: { size: 13, color: '#333' }},
+                autorange: false,
+                tickmode: 'array',
+                tickvals: [1,2,3,4,5,6,7,8,9],
+                ticktext: ['1','2','3','4','5','6','7','8','9'],
+                tickfont: {
+                    size: 11,
+                    color: ['#7f7f7f','#333333','#7f7f7f','#333333','#7f7f7f','#333333','#7f7f7f','#333333','#7f7f7f']
+                }
+            },
+            yaxis: {
+                showgrid: false,
+                autorange: false,
+                range: [-0.05, 0.05],
+                tickmode: 'array',
+                tickvals: [0.01, 0.0, -0.03],
+                ticktext: ['합격','충원합격','불합격'],
+                tickfont: { size: 14 }
+            },
+            plot_bgcolor: "white",
+            paper_bgcolor: "white",
+            showlegend: false,
+        };
+    }
+
+    function switchGradeType(gradeType) {
+        if (currentGradeType === gradeType || !window.Plotly) return;
+        console.log("등급 전환: " + gradeType);
+        currentGradeType = gradeType;
+        document.getElementById('btn-conv-grade').classList.toggle('active', gradeType === 'conv');
+        document.getElementById('btn-all-subj-grade').classList.toggle('active', gradeType === 'all_subj');
+        document.getElementById('grade-type-label').textContent = gradeType === 'conv' ? '환산등급' : '전교과100 등급';
+
+        var overallSummaryPlotId = null;
+        var overallSummaryContainer = document.getElementById('overall-summary');
+        if (overallSummaryContainer) {
+            var plotContainer = overallSummaryContainer.querySelector('.plot-container[id^="plot-"]');
+            if (plotContainer) {
+                overallSummaryPlotId = plotContainer.id.split('-')[1];
+            }
+        }
+
+
+        updateAllPlots(gradeType); // 먼저 박스플롯들을 업데이트
+        
+        // 통계 정보 및 상세 통계 테이블 가시성 업데이트
+        document.querySelectorAll('.plot-stats-wrapper').forEach(function(wrapper) {
+            var plotId = wrapper.querySelector('.plot-container[id^="plot-"]').id.split('-')[1];
+            
+            var convStatsElem = document.getElementById('conv-stats-' + plotId);
+            var allSubjStatsElem = document.getElementById('all-subj-stats-' + plotId);
+            var convAddStatsElem = document.getElementById('conv-additional-stats-' + plotId);
+            var allSubjAddStatsElem = document.getElementById('all-subj-additional-stats-' + plotId);
+
+            if (convStatsElem) convStatsElem.style.display = (gradeType === 'conv') ? 'flex' : 'none';
+            if (allSubjStatsElem) allSubjStatsElem.style.display = (gradeType === 'all_subj') ? 'flex' : 'none';
+            if (convAddStatsElem) convAddStatsElem.style.display = (gradeType === 'conv') ? 'block' : 'none';
+            if (allSubjAddStatsElem) allSubjAddStatsElem.style.display = (gradeType === 'all_subj') ? 'block' : 'none';
+        });
+        
+        // 전체 데이터 요약 섹션의 히스토그램 가시성 업데이트
+        if (overallSummaryPlotId) {
+            var convHistogram = document.getElementById('conv-grade-histogram-' + overallSummaryPlotId);
+            var allSubjHistogram = document.getElementById('all-subj-grade-histogram-' + overallSummaryPlotId);
+            
+            if (convHistogram) convHistogram.style.display = (gradeType === 'conv') ? 'block' : 'none';
+            if (allSubjHistogram) allSubjHistogram.style.display = (gradeType === 'all_subj') ? 'block' : 'none';
+        }
+    }
+
+    function updateAllPlots(gradeType) {
+        console.log('모든 플롯 업데이트 중... 타입:', gradeType);
+        var plotContainers = document.querySelectorAll('.plot-container[id^="plot-"]');
+        plotContainers.forEach(function(plotDiv) {
+            var plotId = plotDiv.id;
+            var numericId = plotId.split('-')[1]; // plot-container의 ID에서 숫자 부분 추출
+            try {
+                if (!window.plotsData || !window.plotsData[numericId]) {
+                    console.error('플롯 데이터를 찾을 수 없음 (update):', numericId);
+                    return;
+                }
+                var plotData = window.plotsData[numericId];
+                var traces;
+                if (gradeType === 'conv') {
+                    traces = JSON.parse(JSON.stringify(plotData.convTraces));
+                } else {
+                    traces = JSON.parse(JSON.stringify(plotData.allSubjTraces));
+                }
+                var layout = createPlotLayout();
+                Plotly.react(plotDiv, traces, layout, {displayModeBar: false, responsive: true, useResizeHandler: true});
+            } catch (error) {
+                console.error(`플롯 ${numericId} 업데이트 오류:`, error);
+                // plotDiv.innerHTML = `<p style="text-align:center; color:red;">플롯 업데이트 중 오류 발생: ${error.message}</p>`;
+            }
+        });
+        console.log('모든 플롯 업데이트 완료');
+    }
+
+    function scrollToElement(id) {
+        var el = document.getElementById(id);
+        if (el) {
+            var headerHeight = document.querySelector('.fixed-header').offsetHeight;
+            var elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
+            var offsetPosition = elementPosition - headerHeight - 20; // 20px 추가 여백
+            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+            // 하이라이트 효과 (선택 사항)
+            el.style.transition = 'background-color 0.5s ease-out';
+            el.style.backgroundColor = 'rgba(255, 223, 186, 0.5)'; // 연한 주황색 하이라이트
+            setTimeout(function() { el.style.backgroundColor = ''; }, 1500); // 1.5초 후 원래대로
+        }
+    }
+    </script>
+    
+            </main>
+        </div>
+    </body>
+    </html>
+    
