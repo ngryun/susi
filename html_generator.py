@@ -427,8 +427,8 @@ def create_advanced_visualizations(plot_id, data):
         }}
 
         // 대학별 지원 현황 (전형유형별)
-        if (data.univRateGroups) {
-            data.univRateGroups.forEach(function(g, idx) {
+        if (data.univRateGroups) {{
+            data.univRateGroups.forEach(function(g, idx) {{
                 var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
                 if (el && g.traces.length > 0) {
                     try {
@@ -436,9 +436,9 @@ def create_advanced_visualizations(plot_id, data):
                             title: '',
                             showlegend: true,
                             barmode: 'stack',
-                            margin: { t: 30, b: 50, l: 150, r: 50 },
-                            xaxis: { title: '지원자 수 (명)' },
-                            yaxis: { automargin: true },
+                            margin: {{ t: 30, b: 50, l: 150, r: 50 }},
+                            xaxis: {{ title: '지원자 수 (명)' }},
+                            yaxis: {{ automargin: true }},
                             autosize: true,
                             height: 350,
                             plot_bgcolor: '#FAFAFA',
