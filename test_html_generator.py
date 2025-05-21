@@ -69,22 +69,25 @@ if not failures:
                 print("Hovertemplate Check: 'window.plotsData' found, and traces seem to exist, but specific plot ID format 'window.plotsData[\"id\"]' was not matched by regex. Will perform a general check.")
                 general_hovertemplate_errors = []
                 for i, s_content in enumerate(script_tags):
-                    if 'window.plotsData' not in s_content: continue
+                    if 'window.plotsData' not in s_content:
+                        continue
 
                     conv_hovertemplates = re.findall(r"name:\s*'.*?',\s*marker:\s*\{.*?\},\s*hovertemplate:\s*'(환산등급:.*?extra>)'", s_content, re.DOTALL)
                     for ht in conv_hovertemplates:
-                        if '{result}' in ht or '<br>' in ht:
-                            general_hovertemplate_errors.append(f"General Hovertemplate Check (convTraces, script index {i}): Found '{{result}}' or '<br>' in hovertemplate: '{ht}'.")
-                    
+                        if '모집단위' not in ht or '세부유형' not in ht:
+                            general_hovertemplate_errors.append(
+                                f"General Hovertemplate Check (convTraces, script index {i}): Missing expected fields in hovertemplate: '{ht}'.")
+
                     all_subj_hovertemplates = re.findall(r"name:\s*'.*?',\s*marker:\s*\{.*?\},\s*hovertemplate:\s*'(전교과등급:.*?extra>)'", s_content, re.DOTALL)
                     for ht in all_subj_hovertemplates:
-                        if '{result}' in ht or '<br>' in ht:
-                            general_hovertemplate_errors.append(f"General Hovertemplate Check (allSubjTraces, script index {i}): Found '{{result}}' or '<br>' in hovertemplate: '{ht}'.")
+                        if '모집단위' not in ht or '세부유형' not in ht:
+                            general_hovertemplate_errors.append(
+                                f"General Hovertemplate Check (allSubjTraces, script index {i}): Missing expected fields in hovertemplate: '{ht}'.")
                 
                 if general_hovertemplate_errors:
                     failures.extend(general_hovertemplate_errors)
                 else:
-                    print("General Hovertemplate Check: No incorrect hovertemplates (containing {result} or <br>) found in general scan.")
+                    print("General Hovertemplate Check: All hovertemplates contain required fields.")
     else: 
         for match_obj in plot_data_script_matches:
             plot_id_str = match_obj.group(1)
@@ -111,11 +114,9 @@ if not failures:
                                 failures.append(f"Hovertemplate Check (convTraces, plot_id {plot_id_str}, trace {trace_idx+1}): No hovertemplate found. Trace: {trace_str[:150]}...")
                             else:
                                 ht = hovertemplate_match.group(1)
-                                expected_ht = '환산등급: %{x}<extra></extra>'
-                                if not (ht == expected_ht or ht == '환산등급: %{x}%<extra></extra>'): 
+                                expected_ht = '환산등급: %{x}<br>모집단위: %{customdata[0]}<br>세부유형: %{customdata[1]}<extra></extra>'
+                                if ht != expected_ht:
                                     failures.append(f"Hovertemplate Check (convTraces, plot_id {plot_id_str}, trace {trace_idx+1}): Incorrect. Expected '{expected_ht}', Got '{ht}'.")
-                                if '{result}' in ht or '<br>' in ht: 
-                                     failures.append(f"Hovertemplate Check (convTraces, plot_id {plot_id_str}, trace {trace_idx+1}): Found '{{result}}' or '<br>' in hovertemplate: '{ht}'.")
 
                 all_subj_traces_match = re.search(r"allSubjTraces:\s*\[(.*?)\]", plot_data_str, re.DOTALL)
                 if all_subj_traces_match:
@@ -137,11 +138,9 @@ if not failures:
                                 failures.append(f"Hovertemplate Check (allSubjTraces, plot_id {plot_id_str}, trace {trace_idx+1}): No hovertemplate found. Trace: {trace_str[:150]}...")
                             else:
                                 ht = hovertemplate_match.group(1)
-                                expected_ht = '전교과등급: %{x}<extra></extra>'
-                                if not (ht == expected_ht or ht == '전교과등급: %{x}%<extra></extra>'):
+                                expected_ht = '전교과등급: %{x}<br>모집단위: %{customdata[0]}<br>세부유형: %{customdata[1]}<extra></extra>'
+                                if ht != expected_ht:
                                     failures.append(f"Hovertemplate Check (allSubjTraces, plot_id {plot_id_str}, trace {trace_idx+1}): Incorrect. Expected '{expected_ht}', Got '{ht}'.")
-                                if '{result}' in ht or '<br>' in ht:
-                                     failures.append(f"Hovertemplate Check (allSubjTraces, plot_id {plot_id_str}, trace {trace_idx+1}): Found '{{result}}' or '<br>' in hovertemplate: '{ht}'.")
             except Exception as e:
                 failures.append(f"Hovertemplate Check: Error processing script content for plotData (plot_id {plot_id_str}): {e}. Content snippet: {plot_data_str[:200]}...")
 
