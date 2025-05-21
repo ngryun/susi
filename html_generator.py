@@ -551,8 +551,8 @@ def plot_selected_depts(
             .toc-header {{ font-weight: bold; font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #333; }}
             .toc-university {{ font-weight: bold; margin-top: 10px; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background-color 0.2s; color: #0056b3; }}
             .toc-university:hover {{ background-color: #e9ecef; }}
-            .toc-subtype-item { margin-left: 18px; font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }
-            .toc-subtype-item:hover { background-color: #f1f3f5; }
+            .toc-subtype-item {{ margin-left: 18px; font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }}
+            .toc-subtype-item:hover {{ background-color: #f1f3f5; }}
             .main-content {{ flex: 1 1 auto; max-width: calc(100% - 245px); padding-top: 20px; }}
             .dept-container {{ margin-bottom: 50px; border: 1px solid #d1d9e6; border-radius: 12px; padding: 25px; background-color: #ffffff; box-shadow: 0 6px 18px rgba(0,0,0,0.07); }}
             .dept-header {{ margin-bottom: 20px; font-weight: bold; font-size: 22px; color: #2c3e50; border-bottom: 2px solid #007bff; padding-bottom: 12px; }}
