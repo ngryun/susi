@@ -736,7 +736,8 @@ def plot_selected_depts(
             html_content += """
             </div>
             """
-
+        # 변수 정의
+        ap_summary_container_id = f"apptype-summary-{univ_idx}"
         # 대학별 전형유형 요약 섹션
         html_content += f"""
         <div class="subtype-container" id="{ap_summary_container_id}" style="background-color: #eef2f7;">
