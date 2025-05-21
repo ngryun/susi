@@ -136,12 +136,13 @@ class DepartmentSelector(tk.Tk):
         filter_frame = ttk.Frame(self.filter_container)
         filter_frame.pack(fill=tk.BOTH, expand=True)
 
+        self.region_filter = MultiSelectFilter(filter_frame, self.df, "region", label="지역", callback=self._on_filter_change)
         self.univ_filter = MultiSelectFilter(filter_frame, self.df, "univ", label="대학", callback=self._on_filter_change)
         self.apptype_filter = MultiSelectFilter(filter_frame, self.df, "apptype", label="전형유형", callback=self._on_filter_change)
         self.subtype_filter = MultiSelectFilter(filter_frame, self.df, "subtype", label="전형", callback=self._on_filter_change)
         self.dept_filter = MultiSelectFilter(filter_frame, self.df, "dept", label="모집단위", callback=self._on_filter_change)
 
-        for col, widget in enumerate((self.univ_filter, self.apptype_filter, self.subtype_filter, self.dept_filter)):
+        for col, widget in enumerate((self.region_filter, self.univ_filter, self.apptype_filter, self.subtype_filter, self.dept_filter)):
             widget.grid(row=0, column=col, sticky="nsew", padx=5)
             filter_frame.columnconfigure(col, weight=1)
 
@@ -193,6 +194,7 @@ class DepartmentSelector(tk.Tk):
             return
 
         # 현재 선택된 필터 값 가져오기
+        regions = self.region_filter.get_selected()
         univs = self.univ_filter.get_selected()
         subs = self.subtype_filter.get_selected()
         depts = self.dept_filter.get_selected()
@@ -202,37 +204,51 @@ class DepartmentSelector(tk.Tk):
         filtered_df = self.df.copy()
         
         # 필터링을 위한 임시 데이터프레임 (각 필터에 적용할 데이터)
+        region_filter_df = self.df.copy()
         univ_filter_df = self.df.copy()
         subtype_filter_df = self.df.copy()
         dept_filter_df = self.df.copy()
         apptype_filter_df = self.df.copy()
         
         # 선택된 필터 적용 - 결과 확인용
+        if regions:
+            filtered_df = filtered_df[filtered_df["region"].isin(regions)]
+            region_filter_df = region_filter_df[region_filter_df["region"].isin(regions)]
+            univ_filter_df = univ_filter_df[univ_filter_df["region"].isin(regions)]
+            subtype_filter_df = subtype_filter_df[subtype_filter_df["region"].isin(regions)]
+            dept_filter_df = dept_filter_df[dept_filter_df["region"].isin(regions)]
+            apptype_filter_df = apptype_filter_df[apptype_filter_df["region"].isin(regions)]
+
         if univs:
             filtered_df = filtered_df[filtered_df["univ"].isin(univs)]
+            region_filter_df = region_filter_df[region_filter_df["univ"].isin(univs)]
             subtype_filter_df = subtype_filter_df[subtype_filter_df["univ"].isin(univs)]
             dept_filter_df = dept_filter_df[dept_filter_df["univ"].isin(univs)]
             apptype_filter_df = apptype_filter_df[apptype_filter_df["univ"].isin(univs)]
         
         if subs:
             filtered_df = filtered_df[filtered_df["subtype"].isin(subs)]
+            region_filter_df = region_filter_df[region_filter_df["subtype"].isin(subs)]
             univ_filter_df = univ_filter_df[univ_filter_df["subtype"].isin(subs)]
             dept_filter_df = dept_filter_df[dept_filter_df["subtype"].isin(subs)]
             apptype_filter_df = apptype_filter_df[apptype_filter_df["subtype"].isin(subs)]
         
         if depts:
             filtered_df = filtered_df[filtered_df["dept"].isin(depts)]
+            region_filter_df = region_filter_df[region_filter_df["dept"].isin(depts)]
             univ_filter_df = univ_filter_df[univ_filter_df["dept"].isin(depts)]
             subtype_filter_df = subtype_filter_df[subtype_filter_df["dept"].isin(depts)]
             apptype_filter_df = apptype_filter_df[apptype_filter_df["dept"].isin(depts)]
 
         if apptypes:
             filtered_df = filtered_df[filtered_df["apptype"].isin(apptypes)]
+            region_filter_df = region_filter_df[region_filter_df["apptype"].isin(apptypes)]
             univ_filter_df = univ_filter_df[univ_filter_df["apptype"].isin(apptypes)]
             subtype_filter_df = subtype_filter_df[subtype_filter_df["apptype"].isin(apptypes)]
             dept_filter_df = dept_filter_df[dept_filter_df["apptype"].isin(apptypes)]
 
         # 각 필터 항목 업데이트
+        self.region_filter.refresh(region_filter_df["region"].unique())
         self.univ_filter.refresh(univ_filter_df["univ"].unique())
         self.apptype_filter.refresh(apptype_filter_df["apptype"].unique())
         self.subtype_filter.refresh(subtype_filter_df["subtype"].unique())
@@ -254,8 +270,9 @@ class DepartmentSelector(tk.Tk):
         selected_univs = self.univ_filter.get_selected() or None
         selected_subtypes = self.subtype_filter.get_selected() or None
         selected_apptypes = self.apptype_filter.get_selected() or None
+        selected_regions = self.region_filter.get_selected() or None
 
-        if not any([selected_depts, selected_univs, selected_subtypes, selected_apptypes]):
+        if not any([selected_depts, selected_univs, selected_subtypes, selected_apptypes, selected_regions]):
             messagebox.showerror("오류", "대학, 전형 또는 모집단위를 하나 이상 선택해주세요.")
             return
 
@@ -290,6 +307,7 @@ class DepartmentSelector(tk.Tk):
                     selected_univs,
                     selected_subtypes,
                     selected_apptypes,
+                    selected_regions,
                     filename,
                 )
                 self.after(0, lambda: self._on_html_done(msg, output_path, prog_win))
