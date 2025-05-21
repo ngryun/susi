@@ -483,12 +483,15 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
                 showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
-            x_values_json = json.dumps(x_values_conv, cls=NumpyEncoder)
-            y_values_json = json.dumps([y_positions.get(result, 0)] * len(x_values_conv))
+            conv_rows = result_data.dropna(subset=["conv_grade"])
+            x_values_json = json.dumps(conv_rows["conv_grade"].tolist(), cls=NumpyEncoder)
+            y_values_json = json.dumps([y_positions.get(result, 0)] * len(conv_rows))
+            customdata_json = json.dumps(list(zip(conv_rows["dept"], conv_rows["subtype"])), cls=NumpyEncoder)
             conv_traces.append(f"""{{
                 x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
                 marker: {{ color: '{color_map[result]["fill"]}', line: {{color: '{color_map[result]["border"]}', width: 1.5}}, symbol: '{symbol_map.get(result, "circle")}', size: 12 }},
-                hovertemplate: '환산등급: %{{x}}<br>{result}<extra></extra>'
+                customdata: {customdata_json},
+                hovertemplate: '환산등급: %{{x}}<br>모집단위: %{{customdata[0]}}<br>세부유형: %{{customdata[1]}}<extra></extra>'
             }}""")
 # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # conv_means_traces.append(f"""{{
@@ -516,12 +519,15 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
                 showlegend: false, hoverinfo: 'skip'
             }}""")
         else:
-            x_values_json = json.dumps(x_values_all_subj, cls=NumpyEncoder)
-            y_values_json = json.dumps([y_positions.get(result, 0)] * len(x_values_all_subj))
+            subj_rows = result_data.dropna(subset=["all_subj_grade"])
+            x_values_json = json.dumps(subj_rows["all_subj_grade"].tolist(), cls=NumpyEncoder)
+            y_values_json = json.dumps([y_positions.get(result, 0)] * len(subj_rows))
+            customdata_json = json.dumps(list(zip(subj_rows["dept"], subj_rows["subtype"])), cls=NumpyEncoder)
             all_subj_traces.append(f"""{{
                 x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
                 marker: {{ color: '{color_map[result]["fill"]}', line: {{color: '{color_map[result]["border"]}', width: 1.5}}, symbol: '{symbol_map.get(result, "circle")}', size: 12 }},
-                hovertemplate: '전교과등급: %{{x}}<br>{result}<extra></extra>'
+                customdata: {customdata_json},
+                hovertemplate: '전교과등급: %{{x}}<br>모집단위: %{{customdata[0]}}<br>세부유형: %{{customdata[1]}}<extra></extra>'
             }}""")
 # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # all_subj_means_traces.append(f"""{{
