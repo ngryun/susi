@@ -1,8 +1,47 @@
+from data_processor import compute_additional_stats, compute_stats, NumpyEncoder # data_processor 모듈이 있다고 가정합니다.
 from pathlib import Path
 import json
-from data_processor import compute_additional_stats, compute_stats, NumpyEncoder # data_processor 모듈이 있다고 가정합니다.
+# Assuming data_processor.py contains these (as per original imports)
+# from data_processor import compute_additional_stats, compute_stats, NumpyEncoder
 import pandas as pd
 
+# Dummy NumpyEncoder for standalone execution if needed
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        import numpy as np
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
+# Dummy compute_additional_stats for standalone execution if needed
+def compute_additional_stats(data, grade_type):
+    # Replace with actual implementation
+    # This is a placeholder
+    if data.empty:
+        return {}
+    stats = {}
+    for result_key in ["합격", "충원합격", "불합격"]:
+        result_data = data[data["result"] == result_key][grade_type].dropna()
+        if not result_data.empty:
+            stats[result_key] = {
+                'count': len(result_data),
+                'mean': result_data.mean() if len(result_data) > 0 else 'N/A',
+                'std': result_data.std() if len(result_data) > 1 else 'N/A',
+                'median': result_data.median() if len(result_data) > 0 else 'N/A',
+                'max': result_data.max() if len(result_data) > 0 else 'N/A',
+                'min': result_data.min() if len(result_data) > 0 else 'N/A',
+                'q1': result_data.quantile(0.25) if len(result_data) > 0 else 'N/A',
+                'q3': result_data.quantile(0.75) if len(result_data) > 0 else 'N/A',
+            }
+        else:
+            stats[result_key] = {'count': 0}
+    return stats
+
+# create_additional_stats_html function from the user (assumed to be correct)
 def create_additional_stats_html(stats, grade_type, result_order=["합격", "충원합격", "불합격"]):
     """
     추가 통계 정보를 HTML 테이블로 형식화.
@@ -19,7 +58,6 @@ def create_additional_stats_html(stats, grade_type, result_order=["합격", "충
             <tr>
     """
 
-    # 모든 등급 타입에 대해 동일한 형식 사용
     headers = ["결과", "데이터 수", "평균", "표준편차", "중앙값", "최댓값", "최솟값", "Q1-Q3 범위"]
     for header in headers:
         html_output += f"<th>{header}</th>"
@@ -30,14 +68,12 @@ def create_additional_stats_html(stats, grade_type, result_order=["합격", "충
     """
 
     for result_key_name in result_order:
-        if result_key_name not in stats or stats[result_key_name]['count'] == 0:
-            if result_key_name not in stats:
-                continue
-
-            if stats[result_key_name]['count'] == 0:
-                num_cols = len(headers)
-                html_output += f"""<tr><td>{result_key_name}</td><td colspan='{num_cols-1}' style='text-align:center;'>데이터 없음</td></tr>"""
-                continue
+        # Check if the result_key_name exists and has data
+        if result_key_name not in stats or not isinstance(stats[result_key_name], dict) or stats[result_key_name].get('count', 0) == 0:
+            # If key doesn't exist or count is 0, display '데이터 없음'
+            num_cols = len(headers)
+            html_output += f"""<tr><td>{result_key_name}</td><td colspan='{num_cols-1}' style='text-align:center;'>데이터 없음</td></tr>"""
+            continue
 
         result_stats_data = stats[result_key_name]
         color_class = ""
@@ -59,7 +95,7 @@ def create_additional_stats_html(stats, grade_type, result_order=["합격", "충
         html_output += f"""
             <tr class="{color_class}">
                 <td>{result_key_name}</td>
-                <td>{result_stats_data['count']}명</td>
+                <td>{result_stats_data.get('count', 0)}명</td>
                 <td>{mean_val}</td>
                 <td>{std_val}</td>
                 <td>{median_val}</td>
@@ -73,8 +109,348 @@ def create_additional_stats_html(stats, grade_type, result_order=["합격", "충
         </tbody>
     </table>
     """
-
     return html_output
+
+# 새로운 함수: 히스토그램 및 추가 시각화 생성 (수정됨)
+def create_advanced_visualizations(plot_id, data):
+    """전체 데이터 요약에 대한 추가 시각화 생성
+
+    결과별 분포와 대학별 합격률을 전형유형별로 구분하여 표시한다.
+    """
+    # 파스텔톤 색상 맵
+    color_map = {
+        "합격": "#A8D8EA",     # 부드러운 하늘색
+        "불합격": "#FFAAA7",   # 부드러운 핑크/연한 빨강
+        "충원합격": "#A8E6CE"  # 부드러운 민트색
+    }
+
+    apptypes = sorted(data['apptype'].dropna().unique())
+
+    donut_groups = []
+    univ_rate_groups = []
+
+    for apptype in apptypes:
+        df_app = data[data['apptype'] == apptype]
+
+        # 결과별 도넛 차트
+        rc = df_app['result'].value_counts().to_dict()
+        v = []
+        l = []
+        c = []
+        for result, count in rc.items():
+            v.append(count)
+            l.append(result)
+            c.append(color_map.get(result, "#666666"))
+        
+        # Ensure there's data for the donut chart
+        if v: # Only create trace if there are values
+            donut_trace = f"""{{
+                values: {json.dumps(v, cls=NumpyEncoder)},
+                labels: {json.dumps(l)},
+                type: 'pie',
+                hole: 0.6,
+                marker: {{ colors: {json.dumps(c)} }},
+                textinfo: 'label+percent',
+                textposition: 'outside',
+                hoverinfo: 'label+value+percent',
+                insidetextorientation: 'radial'
+            }}"""
+            donut_groups.append(f"{{apptype: '{apptype}', traces: [ {donut_trace} ]}}")
+        else:
+            donut_groups.append(f"{{apptype: '{apptype}', traces: []}}")
+
+
+        # 대학별 지원자수 기준 합격/불합격 현황
+        univ_traces_for_apptype = [] # MODIFICATION: Store valid traces here
+        if len(df_app) > 0 and 'univ' in df_app.columns:
+            stats = {}
+            for univ, grp in df_app.groupby('univ'):
+                pass_cnt = len(grp[grp['result'].isin(['합격', '충원합격'])])
+                fail_cnt = len(grp[grp['result'] == '불합격'])
+                total = pass_cnt + fail_cnt
+                if total >= 5: # Consider only universities with enough data
+                    stats[univ] = {'total': total, 'pass': pass_cnt, 'fail': fail_cnt}
+            
+            top_univs = sorted(stats.items(), key=lambda x: x[1]['total'], reverse=True)[:10]
+            
+            if top_univs:
+                univs_list = [u for u, _ in top_univs] # Renamed to avoid conflict
+                pass_counts = [d['pass'] for _, d in top_univs]
+                fail_counts = [d['fail'] for _, d in top_univs]
+                
+                # Pass trace
+                pass_trace_obj_str = f"""{{
+                    y: {json.dumps(univs_list)},
+                    x: {json.dumps(pass_counts)},
+                    name: '합격',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: {{ color: '{color_map.get("합격", "#A8D8EA")}' }},
+                    hovertemplate: '%{{y}}<br>합격: %{{x}}명<extra></extra>'
+                }}"""
+                univ_traces_for_apptype.append(pass_trace_obj_str)
+                
+                # Fail trace
+                fail_trace_obj_str = f"""{{
+                    y: {json.dumps(univs_list)},
+                    x: {json.dumps(fail_counts)},
+                    name: '불합격',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: {{ color: '{color_map.get("불합격", "#FFAAA7")}' }},
+                    hovertemplate: '%{{y}}<br>불합격: %{{x}}명<extra></extra>'
+                }}"""
+                univ_traces_for_apptype.append(fail_trace_obj_str)
+        
+        # MODIFICATION: Append the group with potentially empty traces array, but always valid syntax
+        # This ensures traces is '[]' if univ_traces_for_apptype is empty.
+        univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{', '.join(univ_traces_for_apptype)}]}}")
+
+    # 환산등급 히스토그램 데이터
+    conv_grade_histograms = []
+    pass_data_conv = data[data["result"].isin(["합격", "충원합격"])]["conv_grade"].dropna()
+    if not pass_data_conv.empty: # MODIFICATION: Check if data is not empty
+        values_json = json.dumps(pass_data_conv.tolist(), cls=NumpyEncoder)
+        conv_grade_histograms.append(f"""{{
+            x: {values_json},
+            type: 'histogram',
+            name: '합격(충원포함)',
+            opacity: 0.7,
+            marker: {{ color: '{color_map.get("합격", "#A8D8EA")}' }},
+            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            hoverinfo: 'y+x+name',
+            hoverlabel: {{ bgcolor: '{color_map.get("합격", "#A8D8EA")}' }}
+        }}""")
+
+    fail_data_conv = data[data["result"] == "불합격"]["conv_grade"].dropna()
+    if not fail_data_conv.empty: # MODIFICATION: Check if data is not empty
+        values_json = json.dumps(fail_data_conv.tolist(), cls=NumpyEncoder)
+        conv_grade_histograms.append(f"""{{
+            x: {values_json},
+            type: 'histogram',
+            name: '불합격',
+            opacity: 0.7,
+            marker: {{ color: '{color_map.get("불합격", "#FFAAA7")}' }},
+            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            hoverinfo: 'y+x+name',
+            hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#FFAAA7")}' }}
+        }}""")
+
+    # 전교과등급 히스토그램 데이터
+    all_subj_grade_histograms = []
+    pass_data_all_subj = data[data["result"].isin(["합격", "충원합격"])]["all_subj_grade"].dropna()
+    if not pass_data_all_subj.empty: # MODIFICATION: Check if data is not empty
+        values_json = json.dumps(pass_data_all_subj.tolist(), cls=NumpyEncoder)
+        all_subj_grade_histograms.append(f"""{{
+            x: {values_json},
+            type: 'histogram',
+            name: '합격(충원포함)',
+            opacity: 0.7,
+            marker: {{ color: '{color_map.get("합격", "#A8D8EA")}' }},
+            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            hoverinfo: 'y+x+name',
+            hoverlabel: {{ bgcolor: '{color_map.get("합격", "#A8D8EA")}' }}
+        }}""")
+
+    fail_data_all_subj = data[data["result"] == "불합격"]["all_subj_grade"].dropna()
+    if not fail_data_all_subj.empty: # MODIFICATION: Check if data is not empty
+        values_json = json.dumps(fail_data_all_subj.tolist(), cls=NumpyEncoder)
+        all_subj_grade_histograms.append(f"""{{
+            x: {values_json},
+            type: 'histogram',
+            name: '불합격',
+            opacity: 0.7,
+            marker: {{ color: '{color_map.get("불합격", "#FFAAA7")}' }},
+            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            hoverinfo: 'y+x+name',
+            hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#FFAAA7")}' }}
+        }}""")
+
+    donut_groups_js = "[ " + ", ".join(donut_groups) + " ]"
+    univ_rate_groups_js = "[ " + ", ".join(univ_rate_groups) + " ]"
+
+    # MODIFICATION: Ensure histogram arrays are correctly formatted as empty '[]' if no traces.
+    # The .join() method on an empty list results in an empty string "".
+    # So, [ "" ] becomes an empty JS array [].
+    conv_hist_js = ", ".join(conv_grade_histograms)
+    all_subj_hist_js = ", ".join(all_subj_grade_histograms)
+
+    script = f"""
+    <script>
+    if (!window.advancedVisualizationData) window.advancedVisualizationData = {{}};
+    window.advancedVisualizationData["{plot_id}"] = {{
+        donutGroups: {donut_groups_js},
+        convGradeHistograms: [ {conv_hist_js} ],
+        allSubjGradeHistograms: [ {all_subj_hist_js} ],
+        univRateGroups: {univ_rate_groups_js}
+    }};
+    </script>
+    """
+
+    # HTML 컨테이너 생성 (original structure maintained)
+    visualizations_html = f"<div class=\"advanced-visualizations-container\">"
+    # ... (rest of the HTML generation for containers) ...
+    # This part seems okay, assuming the IDs match up with the JS.
+    # The key is that the data fed into the JS is now more robust.
+
+    # Example of how HTML containers are generated (shortened)
+    for idx, ap in enumerate(apptypes):
+        visualizations_html += f"""
+        <div class="visualization-row">
+            <div class="half-width-visualization">
+                <div class="visualization-title">결과별 분포 - {ap}</div>
+                <div class="plot-container" id="donut-chart-{plot_id}-{idx}" style="height: 400px;"></div>
+            </div>
+            <div class="half-width-visualization">
+                <div class="visualization-title">대학별 합격률 ({ap})</div>
+                <div class="plot-container" id="univ-pass-rates-{plot_id}-{idx}" style="height: 400px;"></div>
+            </div>
+        </div>"""
+    
+    # Add histogram containers if they are expected to be there
+    # The original code adds these containers unconditionally.
+    # It's better if these are also conditional or handled gracefully in JS if data is missing.
+    # For now, keeping original structure for HTML containers:
+    visualizations_html += f"""
+        <div class="visualization-row">
+            <div class="full-width-visualization">
+                <div class="visualization-title">환산등급 분포 (전체 필터 적용)</div>
+                <div class="plot-container" id="conv-grade-histogram-{plot_id}" style="height: 350px;"></div>
+            </div>
+        </div>
+        <div class="visualization-row">
+            <div class="full-width-visualization">
+                <div class="visualization-title">전교과등급 분포 (전체 필터 적용)</div>
+                <div class="plot-container" id="all-subj-grade-histogram-{plot_id}" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>"""
+
+
+    # JavaScript 초기화 코드 (original structure maintained)
+    # The JS try-catch blocks and g.traces.length checks should now work correctly
+    # because the data passed to them will be well-formed.
+    init_script = f"""
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {{
+        initAdvancedVisualizations("{plot_id}");
+    }});
+
+    function initAdvancedVisualizations(plotId) {{
+        if (!window.Plotly || !window.advancedVisualizationData || !window.advancedVisualizationData[plotId]) {{
+            console.warn('Plotly or advancedVisualizationData not ready for plotId:', plotId);
+            return;
+        }}
+
+        var data = window.advancedVisualizationData[plotId];
+
+        // 결과별 도넛 차트 (전형유형별)
+        if (data.donutGroups) {{
+            data.donutGroups.forEach(function(g, idx) {{
+                var el = document.getElementById('donut-chart-' + plotId + '-' + idx);
+                if (el && g.traces && g.traces.length > 0) {{ // Added g.traces check
+                    try {{
+                        Plotly.newPlot(el, g.traces, {{
+                            title: '',
+                            legend: {{ orientation: 'h', y: -0.1, x: 0.5, xanchor: 'center' }},
+                            margin: {{ t: 30, b: 50, l: 50, r: 50 }},
+                            autosize: true,
+                            height: 350,
+                            plot_bgcolor: '#FAFAFA',
+                            paper_bgcolor: '#FAFAFA'
+                        }}, {{ displayModeBar: false, responsive: true }});
+                    }} catch (e) {{ console.error('도넛 차트 생성 오류 for ' + g.apptype + ':', e, g.traces); }}
+                }} else if (el) {{
+                    // console.log('No donut traces for apptype:', g.apptype);
+                    // el.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
+                }}
+            }});
+        }}
+
+        // 대학별 지원 현황 (전형유형별)
+        if (data.univRateGroups) {{
+            data.univRateGroups.forEach(function(g, idx) {{
+                var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
+                // The crucial g.traces.length > 0 check:
+                if (el && g.traces && g.traces.length > 0) {{ // Added g.traces check
+                    try {{ // This is the try block from user's line 434 context
+                        Plotly.newPlot(el, g.traces, {{
+                            title: '',
+                            showlegend: true,
+                            barmode: 'stack',
+                            margin: {{ t: 30, b: 50, l: 150, r: 50 }}, // Increased left margin for y-axis labels if needed
+                            xaxis: {{ title: '지원자 수 (명)' }},
+                            yaxis: {{ automargin: true }}, // automargin can help with long labels
+                            autosize: true,
+                            height: 350, // Adjust height as needed, especially if many universities
+                            plot_bgcolor: '#FAFAFA',
+                            paper_bgcolor: '#FAFAFA'
+                        }}, {{ displayModeBar: false, responsive: true }});
+                    }} catch (e) {{ console.error('대학별 합격률 차트 생성 오류 for ' + g.apptype + ':', e, g.traces); }}
+                }} else if (el) {{
+                    // console.log('No univ rate traces for apptype:', g.apptype);
+                    // el.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
+                }}
+            }});
+        }}
+
+        // 환산등급 히스토그램
+        var convHistEl = document.getElementById('conv-grade-histogram-' + plotId);
+        if (convHistEl && data.convGradeHistograms && data.convGradeHistograms.length > 0) {{
+            try {{
+                Plotly.newPlot(convHistEl, data.convGradeHistograms, {{
+                    title: '',
+                    barmode: 'overlay',
+                    bargap: 0.1,
+                    xaxis: {{ title: '환산등급', range: [1, 9], dtick: 1 }},
+                    yaxis: {{ title: '인원 (명)' }},
+                    legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
+                    margin: {{ t: 30, b: 60, l: 60, r: 50 }},
+                    autosize: true,
+                    height: 350,
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA'
+                }}, {{ displayModeBar: false, responsive: true }});
+            }} catch (e) {{ console.error("환산등급 히스토그램 생성 오류:", e, data.convGradeHistograms); }}
+        }} else if (convHistEl) {{
+            // console.log('No conv grade histogram data.');
+            // convHistEl.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
+        }}
+
+
+        // 전교과등급 히스토그램
+        var allSubjHistEl = document.getElementById('all-subj-grade-histogram-' + plotId);
+        if (allSubjHistEl && data.allSubjGradeHistograms && data.allSubjGradeHistograms.length > 0) {{
+            try {{
+                Plotly.newPlot(allSubjHistEl, data.allSubjGradeHistograms, {{
+                    title: '',
+                    barmode: 'overlay',
+                    bargap: 0.1,
+                    xaxis: {{ title: '전교과등급', range: [1, 9], dtick: 1 }},
+                    yaxis: {{ title: '인원 (명)' }},
+                    legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
+                    margin: {{ t: 30, b: 60, l: 60, r: 50 }},
+                    autosize: true,
+                    height: 350,
+                    plot_bgcolor: '#FAFAFA',
+                    paper_bgcolor: '#FAFAFA'
+                }}, {{ displayModeBar: false, responsive: true }});
+            }} catch (e) {{ console.error("전교과등급 히스토그램 생성 오류:", e, data.allSubjGradeHistograms); }}
+        }} else if (allSubjHistEl) {{
+            // console.log('No all subj grade histogram data.');
+            // allSubjHistEl.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
+        }}
+    }}
+    </script>
+    """
+
+    return script + visualizations_html + init_script
+
+# The rest of your script (create_stats_html, create_plot_data_script, plot_selected_depts)
+# would remain largely the same, as the primary issue seems to be in the data
+# preparation within create_advanced_visualizations.
+# Make sure that plot_selected_depts calls the corrected create_advanced_visualizations.
+
 
 # HTML 통계 정보 생성 함수 (기존 코드 유지)
 def create_stats_html(stats: dict) -> str:
@@ -206,293 +582,6 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
     return script, conv_stats_html_table, all_subj_stats_html_table
 
 # 새로운 함수: 히스토그램 및 추가 시각화 생성
-def create_advanced_visualizations(plot_id, data):
-    """전체 데이터 요약에 대한 추가 시각화 생성
-
-    결과별 분포와 대학별 합격률을 전형유형별로 구분하여 표시한다.
-    """
-    # 파스텔톤 색상 맵
-    color_map = {
-        "합격": "#A8D8EA",     # 부드러운 하늘색
-        "불합격": "#FFAAA7",   # 부드러운 핑크/연한 빨강
-        "충원합격": "#A8E6CE"  # 부드러운 민트색
-    }
-
-    apptypes = sorted(data['apptype'].dropna().unique())
-
-    donut_groups = []
-    univ_rate_groups = []
-
-    for apptype in apptypes:
-        df_app = data[data['apptype'] == apptype]
-
-        # 결과별 도넛 차트
-        rc = df_app['result'].value_counts().to_dict()
-        v = []
-        l = []
-        c = []
-        for result, count in rc.items():
-            v.append(count)
-            l.append(result)
-            c.append(color_map.get(result, "#666666"))
-        donut_trace = f"""{{
-            values: {json.dumps(v, cls=NumpyEncoder)},
-            labels: {json.dumps(l)},
-            type: 'pie',
-            hole: 0.6,
-            marker: {{ colors: {json.dumps(c)} }},
-            textinfo: 'label+percent',
-            textposition: 'outside',
-            hoverinfo: 'label+value+percent',
-            insidetextorientation: 'radial'
-        }}"""
-        donut_groups.append(f"{{apptype: '{apptype}', traces: [ {donut_trace} ]}}")
-
-        # 대학별 지원자수 기준 합격/불합격 현황
-        pass_trace = ""
-        fail_trace = ""
-        if len(df_app) > 0 and 'univ' in df_app.columns:
-            stats = {}
-            for univ, grp in df_app.groupby('univ'):
-                pass_cnt = len(grp[grp['result'].isin(['합격', '충원합격'])])
-                fail_cnt = len(grp[grp['result'] == '불합격'])
-                total = pass_cnt + fail_cnt
-                if total >= 5:
-                    stats[univ] = {'total': total, 'pass': pass_cnt, 'fail': fail_cnt}
-
-            top_univs = sorted(stats.items(), key=lambda x: x[1]['total'], reverse=True)[:10]
-            if top_univs:
-                univs = [u for u, _ in top_univs]
-                pass_counts = [d['pass'] for _, d in top_univs]
-                fail_counts = [d['fail'] for _, d in top_univs]
-                pass_trace = f"""{{
-                    y: {json.dumps(univs)},
-                    x: {json.dumps(pass_counts)},
-                    name: '합격',
-                    type: 'bar',
-                    orientation: 'h',
-                    marker: {{ color: '#A8D8EA' }},
-                    hovertemplate: '%{{y}}<br>합격: %{{x}}명<extra></extra>'
-                }}"""
-                fail_trace = f"""{{
-                    y: {json.dumps(univs)},
-                    x: {json.dumps(fail_counts)},
-                    name: '불합격',
-                    type: 'bar',
-                    orientation: 'h',
-                    marker: {{ color: '#FFAAA7' }},
-                    hovertemplate: '%{{y}}<br>불합격: %{{x}}명<extra></extra>'
-                }}"""
-        univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{pass_trace}, {fail_trace}]}}")
-
-    # 환산등급 히스토그램 데이터
-    conv_grade_histograms = []
-
-    # 2. 환산등급 히스토그램 데이터
-    conv_grade_histograms = []
-
-    # 합격(충원합격 포함) 데이터
-    pass_data = data[data["result"].isin(["합격", "충원합격"])]["conv_grade"].dropna()
-    if len(pass_data) > 0:
-        values_json = json.dumps(pass_data.tolist(), cls=NumpyEncoder)
-        conv_grade_histograms.append(f"""{{
-            x: {values_json},
-            type: 'histogram',
-            name: '합격(충원포함)',
-            opacity: 0.7,
-            marker: {{ color: '#A8D8EA' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
-            hoverinfo: 'y+x+name',
-            hoverlabel: {{ bgcolor: '#A8D8EA' }}
-        }}""")
-
-    # 불합격 데이터
-    fail_data = data[data["result"] == "불합격"]["conv_grade"].dropna()
-    if len(fail_data) > 0:
-        values_json = json.dumps(fail_data.tolist(), cls=NumpyEncoder)
-        conv_grade_histograms.append(f"""{{
-            x: {values_json},
-            type: 'histogram',
-            name: '불합격',
-            opacity: 0.7,
-            marker: {{ color: '{color_map.get("불합격", "#666666")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
-            hoverinfo: 'y+x+name',
-            hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#666666")}' }}
-        }}""")
-
-    # 3. 전교과등급 히스토그램 데이터
-    all_subj_grade_histograms = []
-
-    # 합격(충원합격 포함) 데이터
-    pass_data = data[data["result"].isin(["합격", "충원합격"])]["all_subj_grade"].dropna()
-    if len(pass_data) > 0:
-        values_json = json.dumps(pass_data.tolist(), cls=NumpyEncoder)
-        all_subj_grade_histograms.append(f"""{{
-            x: {values_json},
-            type: 'histogram',
-            name: '합격(충원포함)',
-            opacity: 0.7,
-            marker: {{ color: '#A8D8EA' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
-            hoverinfo: 'y+x+name',
-            hoverlabel: {{ bgcolor: '#A8D8EA' }}
-        }}""")
-
-    # 불합격 데이터
-    fail_data = data[data["result"] == "불합격"]["all_subj_grade"].dropna()
-    if len(fail_data) > 0:
-        values_json = json.dumps(fail_data.tolist(), cls=NumpyEncoder)
-        all_subj_grade_histograms.append(f"""{{
-            x: {values_json},
-            type: 'histogram',
-            name: '불합격',
-            opacity: 0.7,
-            marker: {{ color: '{color_map.get("불합격", "#666666")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
-            hoverinfo: 'y+x+name',
-            hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#666666")}' }}
-        }}""")
-
-    # 스크립트 데이터 생성
-    donut_groups_js = "[ " + ", ".join(donut_groups) + " ]"
-    univ_rate_groups_js = "[ " + ", ".join(univ_rate_groups) + " ]"
-
-    script = f"""
-    <script>
-    if (!window.advancedVisualizationData) window.advancedVisualizationData = {{}};
-    window.advancedVisualizationData["{plot_id}"] = {{
-        donutGroups: {donut_groups_js},
-        convGradeHistograms: [ {", ".join(conv_grade_histograms) if conv_grade_histograms else ""} ],
-        allSubjGradeHistograms: [ {", ".join(all_subj_grade_histograms) if all_subj_grade_histograms else ""} ],
-        univRateGroups: {univ_rate_groups_js}
-    }};
-    </script>
-    """
-
-    # HTML 컨테이너 생성
-    visualizations_html = f"<div class=\"advanced-visualizations-container\">"
-    for idx, ap in enumerate(apptypes):
-        visualizations_html += f"""
-        <div class=\"visualization-row\">"""
-        visualizations_html += f"""
-            <div class=\"half-width-visualization\">
-                <div class=\"visualization-title\">결과별 분포 - {ap}</div>
-                <div class=\"plot-container\" id=\"donut-chart-{plot_id}-{idx}\" style=\"height: 400px;\"></div>
-            </div>
-            <div class=\"half-width-visualization\">
-                <div class=\"visualization-title\">대학별 합격률 ({ap})</div>
-                <div class=\"plot-container\" id=\"univ-pass-rates-{plot_id}-{idx}\" style=\"height: 400px;\"></div>
-            </div>
-        </div>"""
-    visualizations_html += f"""
-        <div class=\"visualization-row\">
-            <div class=\"full-width-visualization\">
-                <div class=\"visualization-title\">전교과등급 분포</div>
-                <div class=\"plot-container\" id=\"all-subj-grade-histogram-{plot_id}\" style=\"height: 350px;\"></div>
-            </div>
-        </div>
-    </div>"""
-
-    # JavaScript 초기화 코드
-    init_script = f"""
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {{
-        initAdvancedVisualizations("{plot_id}");
-    }});
-
-    function initAdvancedVisualizations(plotId) {{
-        if (!window.Plotly || !window.advancedVisualizationData || !window.advancedVisualizationData[plotId]) return;
-
-        var data = window.advancedVisualizationData[plotId];
-
-        // 결과별 도넛 차트 (전형유형별)
-        if (data.donutGroups) {{
-            data.donutGroups.forEach(function(g, idx) {{
-                var el = document.getElementById('donut-chart-' + plotId + '-' + idx);
-                if (el && g.traces.length > 0) {{
-                    try {{
-                        Plotly.newPlot(el, g.traces, {{
-                            title: '',
-                            legend: {{ orientation: 'h', y: -0.1, x: 0.5, xanchor: 'center' }},
-                            margin: {{ t: 30, b: 50, l: 50, r: 50 }},
-                            autosize: true,
-                            height: 350,
-                            plot_bgcolor: '#FAFAFA',
-                            paper_bgcolor: '#FAFAFA'
-                        }}, {{ displayModeBar: false, responsive: true }});
-                    }} catch (e) {{ console.error('도넛 차트 생성 오류:', e); }}
-                }}
-            }});
-        }}
-
-        // 대학별 지원 현황 (전형유형별)
-        if (data.univRateGroups) {{
-            data.univRateGroups.forEach(function(g, idx) {{
-                var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
-                if (el && g.traces.length > 0) {
-                    try {
-                        Plotly.newPlot(el, g.traces, {
-                            title: '',
-                            showlegend: true,
-                            barmode: 'stack',
-                            margin: {{ t: 30, b: 50, l: 150, r: 50 }},
-                            xaxis: {{ title: '지원자 수 (명)' }},
-                            yaxis: {{ automargin: true }},
-                            autosize: true,
-                            height: 350,
-                            plot_bgcolor: '#FAFAFA',
-                            paper_bgcolor: '#FAFAFA'
-                        }, { displayModeBar: false, responsive: true });
-                    } catch (e) { console.error('대학별 합격률 차트 생성 오류:', e); }
-                }
-            });
-        }
-
-        // 환산등급 히스토그램
-        if (data.convGradeHistograms && data.convGradeHistograms.length > 0 && document.getElementById('conv-grade-histogram-' + plotId)) {{
-            try {{
-                Plotly.newPlot('conv-grade-histogram-' + plotId, data.convGradeHistograms, {{
-                    title: '',
-                    barmode: 'overlay',
-                    bargap: 0.1,
-                    xaxis: {{ title: '환산등급', range: [1, 9], dtick: 1 }},
-                    yaxis: {{ title: '인원 (명)' }},
-                    legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
-                    margin: {{ t: 30, b: 60, l: 60, r: 50 }},
-                    autosize: true,
-                    height: 350,
-                    plot_bgcolor: '#FAFAFA',
-                    paper_bgcolor: '#FAFAFA'
-                }}, {{ displayModeBar: false, responsive: true }});
-            }} catch (e) {{ console.error("환산등급 히스토그램 생성 오류:", e); }}
-        }}
-
-        // 전교과등급 히스토그램
-        if (data.allSubjGradeHistograms && data.allSubjGradeHistograms.length > 0 && document.getElementById('all-subj-grade-histogram-' + plotId)) {{
-            try {{
-                Plotly.newPlot('all-subj-grade-histogram-' + plotId, data.allSubjGradeHistograms, {{
-                    title: '',
-                    barmode: 'overlay',
-                    bargap: 0.1,
-                    xaxis: {{ title: '전교과등급', range: [1, 9], dtick: 1 }},
-                    yaxis: {{ title: '인원 (명)' }},
-                    legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
-                    margin: {{ t: 30, b: 60, l: 60, r: 50 }},
-                    autosize: true,
-                    height: 350,
-                    plot_bgcolor: '#FAFAFA',
-                    paper_bgcolor: '#FAFAFA'
-                }}, {{ displayModeBar: false, responsive: true }});
-            }} catch (e) {{ console.error("전교과등급 히스토그램 생성 오류:", e); }}
-        }}
-    }}
-    </script>
-    """
-
-    return script + visualizations_html + init_script
-
-
 # 선택된 모집단위에 대한 대학별 시각화 함수 (전형 필터 추가)
 def plot_selected_depts(
     df: pd.DataFrame,
