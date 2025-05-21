@@ -483,7 +483,15 @@ def create_advanced_visualizations(plot_id, data):
 
 
 # 선택된 모집단위에 대한 대학별 시각화 함수 (전형 필터 추가)
-def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = None, selected_univs: list = None, selected_subtypes: list = None, output_file: str = "선택된_모집단위들.html") -> str:
+def plot_selected_depts(
+    df: pd.DataFrame,
+    out_dir: Path,
+    selected_depts: list = None,
+    selected_univs: list = None,
+    selected_subtypes: list = None,
+    selected_apptypes: list = None,
+    output_file: str = "선택된_모집단위들.html",
+) -> str:
     """선택된 모집단위에 대한 입시 결과를 대학별로 시각화"""
     # 선택된 모집단위와 대학에 해당하는 데이터만 필터링
     df_filtered = df.copy()
@@ -499,6 +507,10 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
     # 선택된 전형 필터링
     if selected_subtypes:
         df_filtered = df_filtered[df_filtered['subtype'].isin(selected_subtypes)]
+
+    # 선택된 전형유형 필터링
+    if selected_apptypes:
+        df_filtered = df_filtered[df_filtered['apptype'].isin(selected_apptypes)]
 
     if df_filtered.empty:
         return "선택된 조건에 맞는 데이터가 없습니다."
@@ -748,6 +760,58 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
             html_content += """
             </div>
             """
+
+        # 대학별 전형유형 요약 섹션
+        ap_summary_container_id = f"apptype-summary-{univ_idx}"
+        html_content += f"""
+        <div class="subtype-container" id="{ap_summary_container_id}" style="background-color: #eef2f7;">
+            <div class="subtype-header" style="color: #1a202c;">전형유형별 요약</div>
+        """
+
+        if selected_apptypes:
+            apptypes_all = sorted(set(df_univ['apptype']) & set(selected_apptypes))
+        else:
+            apptypes_all = sorted(df_univ['apptype'].unique())
+
+        for a_idx, apptype in enumerate(apptypes_all, 1):
+            ss = df_univ[df_univ['apptype'] == apptype]
+
+            if selected_depts:
+                ss = ss[ss['dept'].isin(selected_depts)]
+                if ss.empty:
+                    continue
+            if selected_subtypes:
+                ss = ss[ss['subtype'].isin(selected_subtypes)]
+                if ss.empty:
+                    continue
+
+            conv_stats = compute_stats(ss, "conv_grade")
+            all_subj_stats = compute_stats(ss, "all_subj_grade")
+            conv_stats_html = create_stats_html(conv_stats)
+            all_subj_stats_html = create_stats_html(all_subj_stats)
+
+            plot_script, conv_detail_stats, all_subj_detail_stats = create_plot_data_script(
+                plot_counter, ss, y_positions, marker_styles
+            )
+
+            html_content += f"""
+                <div class="subtype-container" id="apptype-{univ_idx}-{a_idx}" style="margin-left: 20px; background-color: #fbfcfe;">
+                    <div class="subtype-header" style="font-size: 16px; color: #4a5568;">{apptype}</div>
+                    <div class="visualization-container">
+                        <div class="plot-stats-wrapper">
+                            <div id="conv-stats-{plot_counter}" class="stats-container">{conv_stats_html}</div>
+                            <div id="all-subj-stats-{plot_counter}" class="stats-container" style="display:none;">{all_subj_stats_html}</div>
+                            <div class="plot-container" id="plot-{plot_counter}"></div>
+                        </div>
+                        {plot_script}
+                    </div>
+                </div>
+            """
+            plot_counter += 1
+
+        html_content += """
+        </div>
+        """
 
         # 대학별 전형 요약 섹션 (이전 코드와 유사)
         summary_container_id = f"summary-container-{univ_idx}"
