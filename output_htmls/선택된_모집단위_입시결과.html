@@ -3814,33 +3814,49 @@
             hoverinfo: 'y+x+name',
             hoverlabel: { bgcolor: '#FFAAA7' }
         } ],
-        univRateGroups: [ {apptype: '실기/실적위주', traces: []}, {apptype: '학생부위주(교과)', traces: [{
-                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)", "\uac15\uc6d0\ub300\ud559\uad50(\ub3c4\uacc4)"],
-                    x: [2, 10],
+        univRateGroups: [ {apptype: '실기/실적위주', traces: [{
+                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)"],
+                    x: [1],
                     name: '합격',
                     type: 'bar',
                     orientation: 'h',
                     marker: { color: '#A8D8EA' },
                     hovertemplate: '%{y}<br>합격: %{x}명<extra></extra>'
                 }, {
-                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)", "\uac15\uc6d0\ub300\ud559\uad50(\ub3c4\uacc4)"],
-                    x: [17, 5],
+                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)"],
+                    x: [1],
+                    name: '불합격',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: '#FFAAA7' },
+                    hovertemplate: '%{y}<br>불합격: %{x}명<extra></extra>'
+                }]}, {apptype: '학생부위주(교과)', traces: [{
+                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)", "\uac15\uc6d0\ub300\ud559\uad50(\ub3c4\uacc4)", "\uac15\uc6d0\ub300\ud559\uad50(\uc0bc\ucc99)"],
+                    x: [2, 10, 1],
+                    name: '합격',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: '#A8D8EA' },
+                    hovertemplate: '%{y}<br>합격: %{x}명<extra></extra>'
+                }, {
+                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)", "\uac15\uc6d0\ub300\ud559\uad50(\ub3c4\uacc4)", "\uac15\uc6d0\ub300\ud559\uad50(\uc0bc\ucc99)"],
+                    x: [17, 5, 0],
                     name: '불합격',
                     type: 'bar',
                     orientation: 'h',
                     marker: { color: '#FFAAA7' },
                     hovertemplate: '%{y}<br>불합격: %{x}명<extra></extra>'
                 }]}, {apptype: '학생부위주(종합)', traces: [{
-                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)"],
-                    x: [9],
+                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)", "\uac15\uc6d0\ub300\ud559\uad50(\ub3c4\uacc4)", "\uac15\uc6d0\ub300\ud559\uad50(\uc0bc\ucc99)"],
+                    x: [9, 1, 1],
                     name: '합격',
                     type: 'bar',
                     orientation: 'h',
                     marker: { color: '#A8D8EA' },
                     hovertemplate: '%{y}<br>합격: %{x}명<extra></extra>'
                 }, {
-                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)"],
-                    x: [12],
+                    y: ["\uac15\uc6d0\ub300\ud559\uad50(\ucd98\ucc9c)", "\uac15\uc6d0\ub300\ud559\uad50(\ub3c4\uacc4)", "\uac15\uc6d0\ub300\ud559\uad50(\uc0bc\ucc99)"],
+                    x: [12, 1, 0],
                     name: '불합격',
                     type: 'bar',
                     orientation: 'h',
