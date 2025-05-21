@@ -568,6 +568,7 @@ def plot_selected_depts(
     selected_univs: list = None,
     selected_subtypes: list = None,
     selected_apptypes: list = None,
+    selected_regions: list = None,
     output_file: str = "선택된_모집단위들.html",
 ) -> str:
     """선택된 모집단위에 대한 입시 결과를 대학별로 시각화"""
@@ -577,6 +578,10 @@ def plot_selected_depts(
     # 선택된 모집단위 필터링
     if selected_depts:
         df_filtered = df_filtered[df_filtered['dept'].isin(selected_depts)]
+
+    # 선택된 지역 필터링
+    if selected_regions:
+        df_filtered = df_filtered[df_filtered['region'].isin(selected_regions)]
 
     # 선택된 대학 필터링
     if selected_univs:

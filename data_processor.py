@@ -51,11 +51,12 @@ def read_input(path: Path) -> pd.DataFrame:
             path,
             header=None,
             skiprows=2,
-            usecols="G,I,K,M,R,AG,AH",
+            usecols="F,G,I,K,M,R,AG,AH",
             engine=engine,
         )
 
         df.columns = [
+            "region",
             "univ",
             "apptype",
             "subtype",
