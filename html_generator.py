@@ -168,7 +168,8 @@ def create_advanced_visualizations(plot_id, data):
                 pass_cnt = len(grp[grp['result'].isin(['합격', '충원합격'])])
                 fail_cnt = len(grp[grp['result'] == '불합격'])
                 total = pass_cnt + fail_cnt
-                if total >= 5: # Consider only universities with enough data
+                # Include all universities regardless of pass count
+                if total > 0:
                     stats[univ] = {'total': total, 'pass': pass_cnt, 'fail': fail_cnt}
             
             top_univs = sorted(stats.items(), key=lambda x: x[1]['total'], reverse=True)[:10]
