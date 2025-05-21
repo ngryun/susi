@@ -51,7 +51,7 @@ def read_input(path: Path) -> pd.DataFrame:
             path,
             header=None,
             skiprows=2,
-            usecols="G,J,M,T,U,AL",
+            usecols="G,K,M,AH,R,AG",
             engine=engine,
         )
         
