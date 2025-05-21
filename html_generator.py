@@ -551,8 +551,8 @@ def plot_selected_depts(
             .toc-header {{ font-weight: bold; font-size: 18px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #333; }}
             .toc-university {{ font-weight: bold; margin-top: 10px; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background-color 0.2s; color: #0056b3; }}
             .toc-university:hover {{ background-color: #e9ecef; }}
-            .toc-subtype-item {{ margin-left: 18px; font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }}
-            .toc-subtype-item:hover {{ background-color: #f1f3f5; }}
+            .toc-subtype-item { margin-left: 18px; font-size: 0.9em; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: background-color 0.2s; color: #333; }
+            .toc-subtype-item:hover { background-color: #f1f3f5; }
             .main-content {{ flex: 1 1 auto; max-width: calc(100% - 245px); padding-top: 20px; }}
             .dept-container {{ margin-bottom: 50px; border: 1px solid #d1d9e6; border-radius: 12px; padding: 25px; background-color: #ffffff; box-shadow: 0 6px 18px rgba(0,0,0,0.07); }}
             .dept-header {{ margin-bottom: 20px; font-weight: bold; font-size: 22px; color: #2c3e50; border-bottom: 2px solid #007bff; padding-bottom: 12px; }}
@@ -732,37 +732,12 @@ def plot_selected_depts(
                 """
                 plot_counter += 1
 
-            # 모집단위별 요약 (모든 전형 포함)
-            dept_summary_stats_conv = compute_stats(dd, "conv_grade")
-            dept_summary_stats_all_subj = compute_stats(dd, "all_subj_grade")
-            dept_summary_html_conv = create_stats_html(dept_summary_stats_conv)
-            dept_summary_html_all_subj = create_stats_html(dept_summary_stats_all_subj)
-
-            plot_script, conv_detail_stats, all_subj_detail_stats = create_plot_data_script(
-                plot_counter, dd, y_positions, marker_styles
-            )
-
-            html_content += f"""
-            <div class="subtype-container" id="dept-summary-{univ_idx}-{d_idx}" style="margin-left: 20px; background-color: #f0f4f8;">
-                <div class="subtype-header" style="font-size: 16px; color: #2c3e50;">전체 전형 통합</div>
-                <div class="visualization-container">
-                    <div class="plot-stats-wrapper">
-                        <div id="conv-stats-{plot_counter}" class="stats-container">{dept_summary_html_conv}</div>
-                        <div id="all-subj-stats-{plot_counter}" class="stats-container" style="display:none;">{dept_summary_html_all_subj}</div>
-                        <div class="plot-container" id="plot-{plot_counter}"></div>
-                    </div>
-                    {plot_script}
-                </div>
-            </div>
-            """
-            plot_counter += 1
 
             html_content += """
             </div>
             """
 
         # 대학별 전형유형 요약 섹션
-        ap_summary_container_id = f"apptype-summary-{univ_idx}"
         html_content += f"""
         <div class="subtype-container" id="{ap_summary_container_id}" style="background-color: #eef2f7;">
             <div class="subtype-header" style="color: #1a202c;">전형유형별 요약</div>
@@ -970,6 +945,10 @@ def plot_selected_depts(
                     tocHTML += `<div class="toc-dept-item" style="margin-left: 18px; font-weight: bold; margin-top: 8px; color: #0056b3;" onclick="scrollToElement('${deptId}')">${deptTitle}</div>`;
                 }
             });
+            var apSummary = container.querySelector('[id^="apptype-summary-"]');
+            if (apSummary) {
+                tocHTML += `<div class="toc-subtype-item" style="margin-left: 18px;" onclick="scrollToElement('${apSummary.id}')">전형유형별 요약</div>`;
+            }
         });
 
         // 전체 요약 섹션 목차에 추가
