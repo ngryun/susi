@@ -218,7 +218,7 @@ def create_advanced_visualizations(plot_id, data):
             name: '합격(충원포함)',
             opacity: 0.7,
             marker: {{ color: '{color_map.get("합격", "#A8D8EA")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            xbins: {{ start: 1, end: 9, size: 0.5 }},
             hoverinfo: 'y+x+name',
             hoverlabel: {{ bgcolor: '{color_map.get("합격", "#A8D8EA")}' }}
         }}""")
@@ -232,7 +232,7 @@ def create_advanced_visualizations(plot_id, data):
             name: '불합격',
             opacity: 0.7,
             marker: {{ color: '{color_map.get("불합격", "#FFAAA7")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            xbins: {{ start: 1, end: 9, size: 0.5 }},
             hoverinfo: 'y+x+name',
             hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#FFAAA7")}' }}
         }}""")
@@ -248,7 +248,7 @@ def create_advanced_visualizations(plot_id, data):
             name: '합격(충원포함)',
             opacity: 0.7,
             marker: {{ color: '{color_map.get("합격", "#A8D8EA")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            xbins: {{ start: 1, end: 9, size: 0.5 }},
             hoverinfo: 'y+x+name',
             hoverlabel: {{ bgcolor: '{color_map.get("합격", "#A8D8EA")}' }}
         }}""")
@@ -262,7 +262,7 @@ def create_advanced_visualizations(plot_id, data):
             name: '불합격',
             opacity: 0.7,
             marker: {{ color: '{color_map.get("불합격", "#FFAAA7")}' }},
-            xbins: {{ start: 1, end: 9, size: 0.25 }},
+            xbins: {{ start: 1, end: 9, size: 0.5 }},
             hoverinfo: 'y+x+name',
             hoverlabel: {{ bgcolor: '{color_map.get("불합격", "#FFAAA7")}' }}
         }}""")
@@ -401,9 +401,9 @@ def create_advanced_visualizations(plot_id, data):
             try {{
                 Plotly.newPlot(convHistEl, data.convGradeHistograms, {{
                     title: '',
-                    barmode: 'overlay',
+                    barmode: 'group',
                     bargap: 0.1,
-                    xaxis: {{ title: '환산등급', range: [1, 9], dtick: 1 }},
+                    xaxis: {{ title: '환산등급', range: [1, 9], dtick: 0.5 }},
                     yaxis: {{ title: '인원 (명)' }},
                     legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
                     margin: {{ t: 30, b: 60, l: 60, r: 50 }},
@@ -425,9 +425,9 @@ def create_advanced_visualizations(plot_id, data):
             try {{
                 Plotly.newPlot(allSubjHistEl, data.allSubjGradeHistograms, {{
                     title: '',
-                    barmode: 'overlay',
+                    barmode: 'group',
                     bargap: 0.1,
-                    xaxis: {{ title: '전교과등급', range: [1, 9], dtick: 1 }},
+                    xaxis: {{ title: '전교과등급', range: [1, 9], dtick: 0.5 }},
                     yaxis: {{ title: '인원 (명)' }},
                     legend: {{ orientation: 'h', y: 1.1, x: 0.5, xanchor: 'center' }},
                     margin: {{ t: 30, b: 60, l: 60, r: 50 }},
