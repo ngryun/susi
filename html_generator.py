@@ -140,7 +140,7 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
             conv_traces.append(f"""{{
                 x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
                 marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
-                hovertemplate: '환산등급: %{{x}}<extra></extra>'
+                hovertemplate: '환산등급: %{{x}}<br>{result}<extra></extra>'
             }}""")
 # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # conv_means_traces.append(f"""{{
@@ -173,7 +173,7 @@ def create_plot_data_script(plot_id, data, y_positions, marker_styles, symbol_ma
             all_subj_traces.append(f"""{{
                 x: {x_values_json}, y: {y_values_json}, type: 'scatter', mode: 'markers', name: '{result}',
                 marker: {{ color: '{color_map[result]["border"]}', symbol: '{symbol_map.get(result, "circle")}', size: 8 }},
-                hovertemplate: '전교과등급: %{{x}}<extra></extra>'
+                hovertemplate: '전교과등급: %{{x}}<br>{result}<extra></extra>'
             }}""")
 # 평균값을 표시하는 텍스트 트레이스 추가 (제거됨)
             # all_subj_means_traces.append(f"""{{
@@ -632,9 +632,9 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                     </div>
                     <div class="legend-container">
                         <div class="legend-items-wrapper">
-                            <div class="legend-item"><span class="legend-marker" style="color: #3366CC; font-size: 1.2em;">●</span><span class="legend-text" style="margin-left: 5px;">합격</span></div>
-                            <div class="legend-item"><span class="legend-marker" style="color: #109618; font-size: 1.2em;">▲</span><span class="legend-text" style="margin-left: 5px;">충원합격</span></div>
-                            <div class="legend-item"><span class="legend-marker" style="color: #DC3912; font-size: 1.2em;">✕</span><span class="legend-text" style="margin-left: 5px;">불합격</span></div>
+                            <div class="legend-item"><span class="legend-marker" style="background-color: rgba(51, 102, 204, 0.7);"></span><span class="legend-text">합격 (Y축 상단)</span></div>
+                            <div class="legend-item"><span class="legend-marker" style="background-color: rgba(16, 150, 24, 0.7);"></span><span class="legend-text">충원합격 (Y축 중앙)</span></div>
+                            <div class="legend-item"><span class="legend-marker" style="background-color: rgba(220, 57, 18, 0.7);"></span><span class="legend-text">불합격 (Y축 하단)</span></div>
                         </div>
                         <div class="axis-label"><span class="axis-icon">↔</span> X축: <span id="grade-type-label">환산등급</span> (1등급 ~ 9등급)</div>
                     </div>
@@ -1039,7 +1039,8 @@ def plot_selected_depts(df: pd.DataFrame, out_dir: Path, selected_depts: list = 
                 range: [-0.05, 0.05],
                 tickmode: 'array',
                 tickvals: [0.01, 0.0, -0.03],
-                ticktext: ['합격','충원합격','불합격'],
+                // 여기서 티커 텍스트를 비워둠 - 모든 그래프의 Y축 레이블 제거
+                ticktext: ['', '', ''],
                 tickfont: { size: 14 }
             },
             plot_bgcolor: "white",
