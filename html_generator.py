@@ -1065,6 +1065,14 @@ def plot_selected_depts(
             }
         }
         toc.innerHTML = tocHTML;
+
+        // Hide all university containers initially except the overall summary
+        document.querySelectorAll('.dept-container').forEach(function(c) {
+            if (c.id !== 'overall-summary') {
+                c.style.display = 'none';
+            }
+        });
+
         if (overallSummaryElem) {
             initializePlotsInElement('overall-summary');
         }
@@ -1248,7 +1256,12 @@ def plot_selected_depts(
     function scrollToElement(id) {
         var el = document.getElementById(id);
         if (el) {
-            initializePlotsInElement(id);
+            var dept = el.closest('.dept-container');
+            if (dept && dept.id !== 'overall-summary' && dept.style.display === 'none') {
+                dept.style.display = 'block';
+            }
+            initializePlotsInElement(dept ? dept.id : id);
+
             var headerHeight = document.querySelector('.fixed-header').offsetHeight;
             var elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
             var offsetPosition = elementPosition - headerHeight - 20; // 20px 추가 여백
