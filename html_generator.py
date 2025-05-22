@@ -161,7 +161,8 @@ def create_advanced_visualizations(plot_id, data):
 
 
         # 대학별 지원자수 기준 합격/불합격 현황
-        univ_traces_for_apptype = [] # MODIFICATION: Store valid traces here
+        univ_traces_for_apptype = []  # MODIFICATION: Store valid traces here
+        top_univs = []
         if len(df_app) > 0 and 'univ' in df_app.columns:
             stats = {}
             for univ, grp in df_app.groupby('univ'):
@@ -172,7 +173,8 @@ def create_advanced_visualizations(plot_id, data):
                 if total > 0:
                     stats[univ] = {'total': total, 'pass': pass_cnt, 'fail': fail_cnt}
             
-            top_univs = sorted(stats.items(), key=lambda x: x[1]['total'], reverse=True)[:10]
+            # 상위 20개 대학까지 표시하도록 수정
+            top_univs = sorted(stats.items(), key=lambda x: x[1]['total'], reverse=True)[:20]
             
             if top_univs:
                 univs_list = [u for u, _ in top_univs] # Renamed to avoid conflict
@@ -205,7 +207,9 @@ def create_advanced_visualizations(plot_id, data):
         
         # MODIFICATION: Append the group with potentially empty traces array, but always valid syntax
         # This ensures traces is '[]' if univ_traces_for_apptype is empty.
-        univ_rate_groups.append(f"{{apptype: '{apptype}', traces: [{', '.join(univ_traces_for_apptype)}]}}")
+        univ_rate_groups.append(
+            f"{{apptype: '{apptype}', traces: [{', '.join(univ_traces_for_apptype)}], barCount: {len(top_univs)} }}"
+        )
 
     # 환산등급 히스토그램 데이터
     conv_grade_histograms = []
@@ -363,31 +367,33 @@ def create_advanced_visualizations(plot_id, data):
         }}
 
         // 대학별 지원 현황 (전형유형별)
-        if (data.univRateGroups) {{
-            data.univRateGroups.forEach(function(g, idx) {{
+        if (data.univRateGroups) {
+            data.univRateGroups.forEach(function(g, idx) {
                 var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
-                // The crucial g.traces.length > 0 check:
-                if (el && g.traces && g.traces.length > 0) {{ // Added g.traces check
-                    try {{ // This is the try block from user's line 434 context
-                        Plotly.newPlot(el, g.traces, {{
+                if (el && g.traces && g.traces.length > 0) {
+                    try {
+                        var barHeight = 35;
+                        var margin = 50;
+                        var minHeight = 80;
+                        var count = g.barCount || g.traces[0].y.length || 0;
+                        var dynamicHeight = Math.max(minHeight, barHeight * count + margin);
+                        el.style.height = dynamicHeight + 'px';
+                        Plotly.newPlot(el, g.traces, {
                             title: '',
                             showlegend: true,
                             barmode: 'stack',
-                            margin: {{ t: 30, b: 50, l: 150, r: 50 }}, // Increased left margin for y-axis labels if needed
-                            xaxis: {{ title: '지원자 수 (명)' }},
-                            yaxis: {{ automargin: true }}, // automargin can help with long labels
+                            margin: { t: 30, b: 50, l: 150, r: 50 },
+                            xaxis: { title: '지원자 수 (명)' },
+                            yaxis: { automargin: true },
                             autosize: true,
-                            height: 350, // Adjust height as needed, especially if many universities
+                            height: dynamicHeight,
                             plot_bgcolor: '#FAFAFA',
                             paper_bgcolor: '#FAFAFA'
-                        }}, {{ displayModeBar: false, responsive: true }});
-                    }} catch (e) {{ console.error('대학별 합격률 차트 생성 오류 for ' + g.apptype + ':', e, g.traces); }}
-                }} else if (el) {{
-                    // console.log('No univ rate traces for apptype:', g.apptype);
-                    // el.innerHTML = '<p style="text-align:center;color:#999;">데이터 없음</p>';
-                }}
-            }});
-        }}
+                        }, { displayModeBar: false, responsive: true });
+                    } catch (e) { console.error('대학별 합격률 차트 생성 오류 for ' + g.apptype + ':', e, g.traces); }
+                }
+            });
+        }
 
 
         // 전교과등급 히스토그램
