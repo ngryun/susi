@@ -1014,6 +1014,7 @@ def plot_selected_depts(
     <script>
     var currentGradeType = 'all_subj';
     var plotsInitialized = false;
+    var initializedPlots = {};
     document.addEventListener('DOMContentLoaded', function() {
         console.log('페이지 초기화 시작...');
         var toc = document.getElementById('toc-content');
@@ -1064,37 +1065,49 @@ def plot_selected_depts(
             }
         }
         toc.innerHTML = tocHTML;
-        initializeAllPlots();
+        if (overallSummaryElem) {
+            initializePlotsInElement('overall-summary');
+        }
 
     });
+
+    function initializePlot(plotDiv) {
+        var plotId = plotDiv.id;
+        if (initializedPlots[plotId] || !window.Plotly) return;
+        var numericId = plotId.split('-')[1];
+        try {
+            if (!window.plotsData || !window.plotsData[numericId]) {
+                console.error('플롯 데이터를 찾을 수 없음:', numericId);
+                plotDiv.innerHTML = '<p style="text-align:center; color:red;">플롯 데이터 로드 실패</p>';
+                return;
+            }
+            var plotData = window.plotsData[numericId];
+            var traces = JSON.parse(JSON.stringify(
+                currentGradeType === 'conv' ? plotData.convTraces : plotData.allSubjTraces
+            ));
+            var layout = createPlotLayout();
+            Plotly.newPlot(plotDiv, traces, layout, {displayModeBar: false, responsive: true, useResizeHandler: true});
+            initializedPlots[plotId] = true;
+        } catch (error) {
+            console.error(`플롯 ${numericId} 초기화 오류:`, error);
+            plotDiv.innerHTML = `<p style="text-align:center; color:red;">플롯 생성 중 오류 발생: ${error.message}</p>`;
+        }
+    }
+
+    function initializePlotsInElement(elementId) {
+        var container = document.getElementById(elementId);
+        if (!container) return;
+        container.querySelectorAll('.plot-container[id^="plot-"]').forEach(function(div) {
+            initializePlot(div);
+        });
+    }
 
     function initializeAllPlots() {
         if (plotsInitialized || !window.Plotly) return;
         console.log('모든 플롯 초기화 중...');
         var plotContainers = document.querySelectorAll('.plot-container[id^="plot-"]');
         plotContainers.forEach(function(plotDiv) {
-            var plotId = plotDiv.id;
-            var numericId = plotId.split('-')[1];
-            try {
-                // 기본 박스플롯 처리
-                if(plotId.startsWith('plot-')) {
-                    if (!window.plotsData || !window.plotsData[numericId]) {
-                        console.error('플롯 데이터를 찾을 수 없음:', numericId);
-                        plotDiv.innerHTML = '<p style="text-align:center; color:red;">플롯 데이터 로드 실패</p>';
-                        return;
-                    }
-                    var plotData = window.plotsData[numericId];
-                    var traces = JSON.parse(JSON.stringify(
-                        currentGradeType === 'conv' ? plotData.convTraces : plotData.allSubjTraces
-                    ));
-                    var layout = createPlotLayout();
-                    Plotly.newPlot(plotDiv, traces, layout, {displayModeBar: false, responsive: true, useResizeHandler: true});
-                }
-                // 추가 시각화는 별도 함수로 처리됨 (donut-chart, histograms 등)
-            } catch (error) {
-                console.error(`플롯 ${numericId} 초기화 오류:`, error);
-                plotDiv.innerHTML = `<p style="text-align:center; color:red;">플롯 생성 중 오류 발생: ${error.message}</p>`;
-            }
+            initializePlot(plotDiv);
         });
         plotsInitialized = true;
         console.log('모든 플롯 초기화 완료');
@@ -1197,6 +1210,7 @@ def plot_selected_depts(
         var plotContainers = document.querySelectorAll('.plot-container[id^="plot-"]');
         plotContainers.forEach(function(plotDiv) {
             var plotId = plotDiv.id;
+            if (!initializedPlots[plotId]) return;
             var numericId = plotId.split('-')[1]; // plot-container의 ID에서 숫자 부분 추출
             try {
                 if (!window.plotsData || !window.plotsData[numericId]) {
@@ -1234,6 +1248,7 @@ def plot_selected_depts(
     function scrollToElement(id) {
         var el = document.getElementById(id);
         if (el) {
+            initializePlotsInElement(id);
             var headerHeight = document.querySelector('.fixed-header').offsetHeight;
             var elementPosition = el.getBoundingClientRect().top + window.pageYOffset;
             var offsetPosition = elementPosition - headerHeight - 20; // 20px 추가 여백
