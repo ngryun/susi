@@ -367,33 +367,33 @@ def create_advanced_visualizations(plot_id, data):
         }}
 
         // 대학별 지원 현황 (전형유형별)
-        if (data.univRateGroups) {
-            data.univRateGroups.forEach(function(g, idx) {
+        if (data.univRateGroups) {{
+            data.univRateGroups.forEach(function(g, idx) {{
                 var el = document.getElementById('univ-pass-rates-' + plotId + '-' + idx);
-                if (el && g.traces && g.traces.length > 0) {
-                    try {
+                if (el && g.traces && g.traces.length > 0) {{
+                    try {{
                         var barHeight = 35;
                         var margin = 50;
                         var minHeight = 80;
                         var count = g.barCount || g.traces[0].y.length || 0;
                         var dynamicHeight = Math.max(minHeight, barHeight * count + margin);
                         el.style.height = dynamicHeight + 'px';
-                        Plotly.newPlot(el, g.traces, {
+                        Plotly.newPlot(el, g.traces, {{
                             title: '',
                             showlegend: true,
                             barmode: 'stack',
-                            margin: { t: 30, b: 50, l: 150, r: 50 },
-                            xaxis: { title: '지원자 수 (명)' },
-                            yaxis: { automargin: true },
+                            margin: {{ t: 30, b: 50, l: 150, r: 50 }},
+                            xaxis: {{ title: '지원자 수 (명)' }},
+                            yaxis: {{ automargin: true }},
                             autosize: true,
                             height: dynamicHeight,
                             plot_bgcolor: '#FAFAFA',
                             paper_bgcolor: '#FAFAFA'
-                        }, { displayModeBar: false, responsive: true });
-                    } catch (e) { console.error('대학별 합격률 차트 생성 오류 for ' + g.apptype + ':', e, g.traces); }
-                }
-            });
-        }
+                        }}, {{ displayModeBar: false, responsive: true }});
+                    }} catch (e) {{ console.error('대학별 합격률 차트 생성 오류 for ' + g.apptype + ':', e, g.traces); }}
+                }}
+            }});
+        }}
 
 
         // 전교과등급 히스토그램
