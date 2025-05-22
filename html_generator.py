@@ -180,6 +180,8 @@ def create_advanced_visualizations(plot_id, data):
                 univs_list = [u for u, _ in top_univs] # Renamed to avoid conflict
                 pass_counts = [d['pass'] for _, d in top_univs]
                 fail_counts = [d['fail'] for _, d in top_univs]
+                totals = [d['total'] for _, d in top_univs]
+                pass_rates = [f"{d['pass']/d['total']*100:.1f}%" if d['total'] > 0 else '0.0%' for _, d in top_univs]
                 
                 # Pass trace
                 pass_trace_obj_str = f"""{{
@@ -204,6 +206,18 @@ def create_advanced_visualizations(plot_id, data):
                     hovertemplate: '%{{y}}<br>불합격: %{{x}}명<extra></extra>'
                 }}"""
                 univ_traces_for_apptype.append(fail_trace_obj_str)
+
+                pass_rate_scatter = f"""{{
+                    y: {json.dumps(univs_list)},
+                    x: {json.dumps(totals)},
+                    mode: 'text',
+                    text: {json.dumps(pass_rates)},
+                    textposition: 'middle right',
+                    textfont: {{ color: '#333', size: 12 }},
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                }}"""
+                univ_traces_for_apptype.append(pass_rate_scatter)
         
         # MODIFICATION: Append the group with potentially empty traces array, but always valid syntax
         # This ensures traces is '[]' if univ_traces_for_apptype is empty.
