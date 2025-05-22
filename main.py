@@ -128,7 +128,7 @@ class DepartmentSelector(tk.Tk):
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
         self.geometry(f"{w}x{h}+{(sw - w)//2}+{(sh - h)//2}")
 
-    # ------------------------------------------------------------
+    # ----  --------------------------------------------------------
     # ▶ MultiSelectFilter 3종 생성
     # ------------------------------------------------------------
     def _build_filters(self) -> None:
